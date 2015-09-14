@@ -1,4 +1,3 @@
-#line 1 "File/stat.pm"
 package File::stat;
 use 5.006;
 
@@ -220,4 +219,138 @@ sub stat ($) {
 1;
 __END__
 
-#line 357
+=head1 NAME
+
+File::stat - by-name interface to Perl's built-in stat() functions
+
+=head1 SYNOPSIS
+
+ use File::stat;
+ $st = stat($file) or die "No $file: $!";
+ if ( ($st->mode & 0111) && $st->nlink > 1) ) {
+     print "$file is executable with lotsa links\n";
+ } 
+
+ if ( -x $st ) {
+     print "$file is executable\n";
+ }
+
+ use Fcntl "S_IRUSR";
+ if ( $st->cando(S_IRUSR, 1) ) {
+     print "My effective uid can read $file\n";
+ }
+
+ use File::stat qw(:FIELDS);
+ stat($file) or die "No $file: $!";
+ if ( ($st_mode & 0111) && ($st_nlink > 1) ) {
+     print "$file is executable with lotsa links\n";
+ } 
+
+=head1 DESCRIPTION
+
+This module's default exports override the core stat() 
+and lstat() functions, replacing them with versions that return 
+"File::stat" objects.  This object has methods that
+return the similarly named structure field name from the
+stat(2) function; namely,
+dev,
+ino,
+mode,
+nlink,
+uid,
+gid,
+rdev,
+size,
+atime,
+mtime,
+ctime,
+blksize,
+and
+blocks.  
+
+As of version 1.02 (provided with perl 5.12) the object provides C<"-X">
+overloading, so you can call filetest operators (C<-f>, C<-x>, and so
+on) on it. It also provides a C<< ->cando >> method, called like
+
+ $st->cando( ACCESS, EFFECTIVE )
+
+where I<ACCESS> is one of C<S_IRUSR>, C<S_IWUSR> or C<S_IXUSR> from the
+L<Fcntl|Fcntl> module, and I<EFFECTIVE> indicates whether to use
+effective (true) or real (false) ids. The method interprets the C<mode>,
+C<uid> and C<gid> fields, and returns whether or not the current process
+would be allowed the specified access.
+
+If you don't want to use the objects, you may import the C<< ->cando >>
+method into your namespace as a regular function called C<stat_cando>.
+This takes an arrayref containing the return values of C<stat> or
+C<lstat> as its first argument, and interprets it for you.
+
+You may also import all the structure fields directly into your namespace
+as regular variables using the :FIELDS import tag.  (Note that this still
+overrides your stat() and lstat() functions.)  Access these fields as
+variables named with a preceding C<st_> in front their method names.
+Thus, C<$stat_obj-E<gt>dev()> corresponds to $st_dev if you import
+the fields.
+
+To access this functionality without the core overrides,
+pass the C<use> an empty import list, and then access
+function functions with their full qualified names.
+On the other hand, the built-ins are still available
+via the C<CORE::> pseudo-package.
+
+=head1 BUGS
+
+As of Perl 5.8.0 after using this module you cannot use the implicit
+C<$_> or the special filehandle C<_> with stat() or lstat(), trying
+to do so leads into strange errors.  The workaround is for C<$_> to
+be explicit
+
+    my $stat_obj = stat $_;
+
+and for C<_> to explicitly populate the object using the unexported
+and undocumented populate() function with CORE::stat():
+
+    my $stat_obj = File::stat::populate(CORE::stat(_));
+
+=head1 ERRORS
+
+=over 4
+
+=item -%s is not implemented on a File::stat object
+
+The filetest operators C<-t>, C<-T> and C<-B> are not implemented, as
+they require more information than just a stat buffer.
+
+=back
+
+=head1 WARNINGS
+
+These can all be disabled with
+
+    no warnings "File::stat";
+
+=over 4
+
+=item File::stat ignores use filetest 'access'
+
+You have tried to use one of the C<-rwxRWX> filetests with C<use
+filetest 'access'> in effect. C<File::stat> will ignore the pragma, and
+just use the information in the C<mode> member as usual.
+
+=item File::stat ignores VMS ACLs
+
+VMS systems have a permissions structure that cannot be completely
+represented in a stat buffer, and unlike on other systems the builtin
+filetest operators respect this. The C<File::stat> overloads, however,
+do not, since the information required is not available.
+
+=back
+
+=head1 NOTE
+
+While this class is currently implemented using the Class::Struct
+module to build a struct-like class, you shouldn't rely upon this.
+
+=head1 AUTHOR
+
+Tom Christiansen

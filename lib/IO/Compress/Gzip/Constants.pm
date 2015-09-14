@@ -1,4 +1,3 @@
-#line 1 "IO/Compress/Gzip/Constants.pm"
 package IO::Compress::Gzip::Constants;
 
 use strict ;

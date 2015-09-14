@@ -1,4 +1,3 @@
-#line 1 "IO/Compress/Base.pm"
 
 package IO::Compress::Base ;
 
@@ -1009,4 +1008,41 @@ sub _notAvailable
 
 __END__
 
-#line 1049
+=head1 NAME
+
+IO::Compress::Base - Base Class for IO::Compress modules 
+
+=head1 SYNOPSIS
+
+    use IO::Compress::Base ;
+
+=head1 DESCRIPTION
+
+This module is not intended for direct use in application code. Its sole
+purpose is to be sub-classed by IO::Compress modules.
+
+=head1 SEE ALSO
+
+L<Compress::Zlib>, L<IO::Compress::Gzip>, L<IO::Uncompress::Gunzip>, L<IO::Compress::Deflate>, L<IO::Uncompress::Inflate>, L<IO::Compress::RawDeflate>, L<IO::Uncompress::RawInflate>, L<IO::Compress::Bzip2>, L<IO::Uncompress::Bunzip2>, L<IO::Compress::Lzma>, L<IO::Uncompress::UnLzma>, L<IO::Compress::Xz>, L<IO::Uncompress::UnXz>, L<IO::Compress::Lzop>, L<IO::Uncompress::UnLzop>, L<IO::Compress::Lzf>, L<IO::Uncompress::UnLzf>, L<IO::Uncompress::AnyInflate>, L<IO::Uncompress::AnyUncompress>
+
+L<IO::Compress::FAQ|IO::Compress::FAQ>
+
+L<File::GlobMapper|File::GlobMapper>, L<Archive::Zip|Archive::Zip>,
+L<Archive::Tar|Archive::Tar>,
+L<IO::Zlib|IO::Zlib>
+
+=head1 AUTHOR
+
+This module was written by Paul Marquess, F<pmqs@cpan.org>. 
+
+=head1 MODIFICATION HISTORY
+
+See the Changes file.
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (c) 2005-2014 Paul Marquess. All rights reserved.
+
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+

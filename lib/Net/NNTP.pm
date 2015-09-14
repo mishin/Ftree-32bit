@@ -1,4 +1,3 @@
-#line 1 "Net/NNTP.pm"
 # Net::NNTP.pm
 #
 # Copyright (c) 1995-1997 Graham Barr <gbarr@pobox.com>. All rights reserved.
@@ -702,4 +701,454 @@ sub DESTROY {
 
 __END__
 
-#line 1155
+=head1 NAME
+
+Net::NNTP - NNTP Client class
+
+=head1 SYNOPSIS
+
+    use Net::NNTP;
+
+    $nntp = Net::NNTP->new("some.host.name");
+    $nntp->quit;
+
+=head1 DESCRIPTION
+
+C<Net::NNTP> is a class implementing a simple NNTP client in Perl as described
+in RFC977.
+
+The Net::NNTP class is a subclass of Net::Cmd and IO::Socket::INET.
+
+=head1 CONSTRUCTOR
+
+=over 4
+
+=item new ( [ HOST ] [, OPTIONS ])
+
+This is the constructor for a new Net::NNTP object. C<HOST> is the
+name of the remote host to which a NNTP connection is required. If not
+given then it may be passed as the C<Host> option described below. If no host is passed
+then two environment variables are checked, first C<NNTPSERVER> then
+C<NEWSHOST>, then C<Net::Config> is checked, and if a host is not found
+then C<news> is used.
+
+C<OPTIONS> are passed in a hash like fashion, using key and value pairs.
+Possible options are:
+
+B<Host> - NNTP host to connect to. It may be a single scalar, as defined for
+the C<PeerAddr> option in L<IO::Socket::INET>, or a reference to
+an array with hosts to try in turn. The L</host> method will return the value
+which was used to connect to the host.
+
+B<Timeout> - Maximum time, in seconds, to wait for a response from the
+NNTP server, a value of zero will cause all IO operations to block.
+(default: 120)
+
+B<Debug> - Enable the printing of debugging information to STDERR
+
+B<Reader> - If the remote server is INN then initially the connection
+will be to nnrpd, by default C<Net::NNTP> will issue a C<MODE READER> command
+so that the remote server becomes innd. If the C<Reader> option is given
+with a value of zero, then this command will not be sent and the
+connection will be left talking to nnrpd.
+
+B<LocalAddr> - If multiple IP addresses are present on the client host
+with a valid route to the destination, you can specify the address your
+C<Net::NNTP> connects from and this way override the operating system's
+pick.
+
+=back
+
+=head1 METHODS
+
+Unless otherwise stated all methods return either a I<true> or I<false>
+value, with I<true> meaning that the operation was a success. When a method
+states that it returns a value, failure will be returned as I<undef> or an
+empty list.
+
+C<Net::NNTP> inherits from C<Net::Cmd> so methods defined in C<Net::Cmd> may
+be used to send commands to the remote NNTP server in addition to the methods
+documented here.
+
+=over 4
+
+=item article ( [ MSGID|MSGNUM ], [FH] )
+
+Retrieve the header, a blank line, then the body (text) of the
+specified article. 
+
+If C<FH> is specified then it is expected to be a valid filehandle
+and the result will be printed to it, on success a true value will be
+returned. If C<FH> is not specified then the return value, on success,
+will be a reference to an array containing the article requested, each
+entry in the array will contain one line of the article.
+
+If no arguments are passed then the current article in the currently
+selected newsgroup is fetched.
+
+C<MSGNUM> is a numeric id of an article in the current newsgroup, and
+will change the current article pointer.  C<MSGID> is the message id of
+an article as shown in that article's header.  It is anticipated that the
+client will obtain the C<MSGID> from a list provided by the C<newnews>
+command, from references contained within another article, or from the
+message-id provided in the response to some other commands.
+
+If there is an error then C<undef> will be returned.
+
+=item body ( [ MSGID|MSGNUM ], [FH] )
+
+Like C<article> but only fetches the body of the article.
+
+=item head ( [ MSGID|MSGNUM ], [FH] )
+
+Like C<article> but only fetches the headers for the article.
+
+=item articlefh ( [ MSGID|MSGNUM ] )
+
+=item bodyfh ( [ MSGID|MSGNUM ] )
+
+=item headfh ( [ MSGID|MSGNUM ] )
+
+These are similar to article(), body() and head(), but rather than
+returning the requested data directly, they return a tied filehandle
+from which to read the article.
+
+=item nntpstat ( [ MSGID|MSGNUM ] )
+
+The C<nntpstat> command is similar to the C<article> command except that no
+text is returned.  When selecting by message number within a group,
+the C<nntpstat> command serves to set the "current article pointer" without
+sending text.
+
+Using the C<nntpstat> command to
+select by message-id is valid but of questionable value, since a
+selection by message-id does B<not> alter the "current article pointer".
+
+Returns the message-id of the "current article".
+
+=item group ( [ GROUP ] )
+
+Set and/or get the current group. If C<GROUP> is not given then information
+is returned on the current group.
+
+In a scalar context it returns the group name.
+
+In an array context the return value is a list containing, the number
+of articles in the group, the number of the first article, the number
+of the last article and the group name.
+
+=item ihave ( MSGID [, MESSAGE ])
+
+The C<ihave> command informs the server that the client has an article
+whose id is C<MSGID>.  If the server desires a copy of that
+article, and C<MESSAGE> has been given the it will be sent.
+
+Returns I<true> if the server desires the article and C<MESSAGE> was
+successfully sent,if specified.
+
+If C<MESSAGE> is not specified then the message must be sent using the
+C<datasend> and C<dataend> methods from L<Net::Cmd>
+
+C<MESSAGE> can be either an array of lines or a reference to an array.
+
+=item last ()
+
+Set the "current article pointer" to the previous article in the current
+newsgroup.
+
+Returns the message-id of the article.
+
+=item date ()
+
+Returns the date on the remote server. This date will be in a UNIX time
+format (seconds since 1970)
+
+=item postok ()
+
+C<postok> will return I<true> if the servers initial response indicated
+that it will allow posting.
+
+=item authinfo ( USER, PASS )
+
+Authenticates to the server (using AUTHINFO USER / AUTHINFO PASS)
+using the supplied username and password.  Please note that the
+password is sent in clear text to the server.  This command should not
+be used with valuable passwords unless the connection to the server is
+somehow protected.
+
+=item list ()
+
+Obtain information about all the active newsgroups. The results is a reference
+to a hash where the key is a group name and each value is a reference to an
+array. The elements in this array are:- the last article number in the group,
+the first article number in the group and any information flags about the group.
+
+=item newgroups ( SINCE [, DISTRIBUTIONS ])
+
+C<SINCE> is a time value and C<DISTRIBUTIONS> is either a distribution
+pattern or a reference to a list of distribution patterns.
+The result is the same as C<list>, but the
+groups return will be limited to those created after C<SINCE> and, if
+specified, in one of the distribution areas in C<DISTRIBUTIONS>. 
+
+=item newnews ( SINCE [, GROUPS [, DISTRIBUTIONS ]])
+
+C<SINCE> is a time value. C<GROUPS> is either a group pattern or a reference
+to a list of group patterns. C<DISTRIBUTIONS> is either a distribution
+pattern or a reference to a list of distribution patterns.
+
+Returns a reference to a list which contains the message-ids of all news posted
+after C<SINCE>, that are in a groups which matched C<GROUPS> and a
+distribution which matches C<DISTRIBUTIONS>.
+
+=item next ()
+
+Set the "current article pointer" to the next article in the current
+newsgroup.
+
+Returns the message-id of the article.
+
+=item post ( [ MESSAGE ] )
+
+Post a new article to the news server. If C<MESSAGE> is specified and posting
+is allowed then the message will be sent.
+
+If C<MESSAGE> is not specified then the message must be sent using the
+C<datasend> and C<dataend> methods from L<Net::Cmd>
+
+C<MESSAGE> can be either an array of lines or a reference to an array.
+
+The message, either sent via C<datasend> or as the C<MESSAGE>
+parameter, must be in the format as described by RFC822 and must
+contain From:, Newsgroups: and Subject: headers.
+
+=item postfh ()
+
+Post a new article to the news server using a tied filehandle.  If
+posting is allowed, this method will return a tied filehandle that you
+can print() the contents of the article to be posted.  You must
+explicitly close() the filehandle when you are finished posting the
+article, and the return value from the close() call will indicate
+whether the message was successfully posted.
+
+=item slave ()
+
+Tell the remote server that I am not a user client, but probably another
+news server.
+
+=item quit ()
+
+Quit the remote server and close the socket connection.
+
+=back
+
+=head2 Extension methods
+
+These methods use commands that are not part of the RFC977 documentation. Some
+servers may not support all of them.
+
+=over 4
+
+=item newsgroups ( [ PATTERN ] )
+
+Returns a reference to a hash where the keys are all the group names which
+match C<PATTERN>, or all of the groups if no pattern is specified, and
+each value contains the description text for the group.
+
+=item distributions ()
+
+Returns a reference to a hash where the keys are all the possible
+distribution names and the values are the distribution descriptions.
+
+=item subscriptions ()
+
+Returns a reference to a list which contains a list of groups which
+are recommended for a new user to subscribe to.
+
+=item overview_fmt ()
+
+Returns a reference to an array which contain the names of the fields returned
+by C<xover>.
+
+=item active_times ()
+
+Returns a reference to a hash where the keys are the group names and each
+value is a reference to an array containing the time the groups was created
+and an identifier, possibly an Email address, of the creator.
+
+=item active ( [ PATTERN ] )
+
+Similar to C<list> but only active groups that match the pattern are returned.
+C<PATTERN> can be a group pattern.
+
+=item xgtitle ( PATTERN )
+
+Returns a reference to a hash where the keys are all the group names which
+match C<PATTERN> and each value is the description text for the group.
+
+=item xhdr ( HEADER, MESSAGE-SPEC )
+
+Obtain the header field C<HEADER> for all the messages specified. 
+
+The return value will be a reference
+to a hash where the keys are the message numbers and each value contains
+the text of the requested header for that message.
+
+=item xover ( MESSAGE-SPEC )
+
+The return value will be a reference
+to a hash where the keys are the message numbers and each value contains
+a reference to an array which contains the overview fields for that
+message.
+
+The names of the fields can be obtained by calling C<overview_fmt>.
+
+=item xpath ( MESSAGE-ID )
+
+Returns the path name to the file on the server which contains the specified
+message.
+
+=item xpat ( HEADER, PATTERN, MESSAGE-SPEC)
+
+The result is the same as C<xhdr> except the is will be restricted to
+headers where the text of the header matches C<PATTERN>
+
+=item xrover
+
+The XROVER command returns reference information for the article(s)
+specified.
+
+Returns a reference to a HASH where the keys are the message numbers and the
+values are the References: lines from the articles
+
+=item listgroup ( [ GROUP ] )
+
+Returns a reference to a list of all the active messages in C<GROUP>, or
+the current group if C<GROUP> is not specified.
+
+=item reader
+
+Tell the server that you are a reader and not another server.
+
+This is required by some servers. For example if you are connecting to
+an INN server and you have transfer permission your connection will
+be connected to the transfer daemon, not the NNTP daemon. Issuing
+this command will cause the transfer daemon to hand over control
+to the NNTP daemon.
+
+Some servers do not understand this command, but issuing it and ignoring
+the response is harmless.
+
+=back
+
+=head1 UNSUPPORTED
+
+The following NNTP command are unsupported by the package, and there are
+no plans to do so.
+
+    AUTHINFO GENERIC
+    XTHREAD
+    XSEARCH
+    XINDEX
+
+=head1 DEFINITIONS
+
+=over 4
+
+=item MESSAGE-SPEC
+
+C<MESSAGE-SPEC> is either a single message-id, a single message number, or
+a reference to a list of two message numbers.
+
+If C<MESSAGE-SPEC> is a reference to a list of two message numbers and the
+second number in a range is less than or equal to the first then the range
+represents all messages in the group after the first message number.
+
+B<NOTE> For compatibility reasons only with earlier versions of Net::NNTP
+a message spec can be passed as a list of two numbers, this is deprecated
+and a reference to the list should now be passed
+
+=item PATTERN
+
+The C<NNTP> protocol uses the C<WILDMAT> format for patterns.
+The WILDMAT format was first developed by Rich Salz based on
+the format used in the UNIX "find" command to articulate
+file names. It was developed to provide a uniform mechanism
+for matching patterns in the same manner that the UNIX shell
+matches filenames.
+
+Patterns are implicitly anchored at the
+beginning and end of each string when testing for a match.
+
+There are five pattern matching operations other than a strict
+one-to-one match between the pattern and the source to be
+checked for a match.
+
+The first is an asterisk C<*> to match any sequence of zero or more
+characters.
+
+The second is a question mark C<?> to match any single character. The
+third specifies a specific set of characters.
+
+The set is specified as a list of characters, or as a range of characters
+where the beginning and end of the range are separated by a minus (or dash)
+character, or as any combination of lists and ranges. The dash can
+also be included in the set as a character it if is the beginning
+or end of the set. This set is enclosed in square brackets. The
+close square bracket C<]> may be used in a set if it is the first
+character in the set.
+
+The fourth operation is the same as the
+logical not of the third operation and is specified the same
+way as the third with the addition of a caret character C<^> at
+the beginning of the test string just inside the open square
+bracket.
+
+The final operation uses the backslash character to
+invalidate the special meaning of an open square bracket C<[>,
+the asterisk, backslash or the question mark. Two backslashes in
+sequence will result in the evaluation of the backslash as a
+character with no special meaning.
+
+=over 4
+
+=item Examples
+
+=item C<[^]-]>
+
+matches any single character other than a close square
+bracket or a minus sign/dash.
+
+=item C<*bdc>
+
+matches any string that ends with the string "bdc"
+including the string "bdc" (without quotes).
+
+=item C<[0-9a-zA-Z]>
+
+matches any single printable alphanumeric ASCII character.
+
+=item C<a??d>
+
+matches any four character string which begins
+with a and ends with d.
+
+=back
+
+=back
+
+=head1 SEE ALSO
+
+L<Net::Cmd>
+
+=head1 AUTHOR
+
+Graham Barr <gbarr@pobox.com>
+
+=head1 COPYRIGHT
+
+Copyright (c) 1995-1997 Graham Barr. All rights reserved.
+This program is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut

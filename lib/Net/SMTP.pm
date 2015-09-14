@@ -1,4 +1,3 @@
-#line 1 "Net/SMTP.pm"
 # Net::SMTP.pm
 #
 # Copyright (c) 1995-2004 Graham Barr <gbarr@pobox.com>. All rights reserved.
@@ -537,4 +536,348 @@ sub _AUTH { shift->command("AUTH", @_)->response() == CMD_OK }
 
 __END__
 
-#line 884
+=head1 NAME
+
+Net::SMTP - Simple Mail Transfer Protocol Client
+
+=head1 SYNOPSIS
+
+    use Net::SMTP;
+
+    # Constructors
+    $smtp = Net::SMTP->new('mailhost');
+    $smtp = Net::SMTP->new('mailhost', Timeout => 60);
+
+=head1 DESCRIPTION
+
+This module implements a client interface to the SMTP and ESMTP
+protocol, enabling a perl5 application to talk to SMTP servers. This
+documentation assumes that you are familiar with the concepts of the
+SMTP protocol described in RFC821.
+
+A new Net::SMTP object must be created with the I<new> method. Once
+this has been done, all SMTP commands are accessed through this object.
+
+The Net::SMTP class is a subclass of Net::Cmd and IO::Socket::INET.
+
+=head1 EXAMPLES
+
+This example prints the mail domain name of the SMTP server known as mailhost:
+
+    #!/usr/local/bin/perl -w
+
+    use Net::SMTP;
+
+    $smtp = Net::SMTP->new('mailhost');
+    print $smtp->domain,"\n";
+    $smtp->quit;
+
+This example sends a small message to the postmaster at the SMTP server
+known as mailhost:
+
+    #!/usr/local/bin/perl -w
+
+    use Net::SMTP;
+
+    my $smtp = Net::SMTP->new('mailhost');
+
+    $smtp->mail($ENV{USER});
+    if ($smtp->to('postmaster')) {
+     $smtp->data();
+     $smtp->datasend("To: postmaster\n");
+     $smtp->datasend("\n");
+     $smtp->datasend("A simple test message\n");
+     $smtp->dataend();
+    } else {
+     print "Error: ", $smtp->message();
+    }
+
+    $smtp->quit;
+
+=head1 CONSTRUCTOR
+
+=over 4
+
+=item new ( [ HOST ] [, OPTIONS ] )
+
+This is the constructor for a new Net::SMTP object. C<HOST> is the
+name of the remote host to which an SMTP connection is required.
+
+On failure C<undef> will be returned and C<$@> will contain the reason
+for the failure.
+
+C<HOST> is optional. If C<HOST> is not given then it may instead be
+passed as the C<Host> option described below. If neither is given then
+the C<SMTP_Hosts> specified in C<Net::Config> will be used.
+
+C<OPTIONS> are passed in a hash like fashion, using key and value pairs.
+Possible options are:
+
+B<Hello> - SMTP requires that you identify yourself. This option
+specifies a string to pass as your mail domain. If not given localhost.localdomain
+will be used.
+
+B<Host> - SMTP host to connect to. It may be a single scalar (hostname[:port]),
+as defined for the C<PeerAddr> option in L<IO::Socket::INET>, or a reference to
+an array with hosts to try in turn. The L</host> method will return the value
+which was used to connect to the host.
+
+B<Port> - port to connect to. Format - C<PeerHost> from L<IO::Socket::INET> new method.
+Default - 25.
+
+B<LocalAddr> and B<LocalPort> - These parameters are passed directly
+to IO::Socket to allow binding the socket to a local port.
+
+B<Timeout> - Maximum time, in seconds, to wait for a response from the
+SMTP server (default: 120)
+
+B<ExactAddresses> - If true the all ADDRESS arguments must be as
+defined by C<addr-spec> in RFC2822. If not given, or false, then
+Net::SMTP will attempt to extract the address from the value passed.
+
+B<Debug> - Enable debugging information
+
+
+Example:
+
+
+    $smtp = Net::SMTP->new('mailhost',
+			   Hello => 'my.mail.domain',
+			   Timeout => 30,
+                           Debug   => 1,
+			  );
+
+    # the same
+    $smtp = Net::SMTP->new(
+			   Host => 'mailhost',
+			   Hello => 'my.mail.domain',
+			   Timeout => 30,
+                           Debug   => 1,
+			  );
+
+    # Connect to the default server from Net::config
+    $smtp = Net::SMTP->new(
+			   Hello => 'my.mail.domain',
+			   Timeout => 30,
+			  );
+
+=back
+
+=head1 METHODS
+
+Unless otherwise stated all methods return either a I<true> or I<false>
+value, with I<true> meaning that the operation was a success. When a method
+states that it returns a value, failure will be returned as I<undef> or an
+empty list.
+
+C<Net::SMTP> inherits from C<Net::Cmd> so methods defined in C<Net::Cmd> may
+be used to send commands to the remote SMTP server in addition to the methods
+documented here.
+
+=over 4
+
+=item banner ()
+
+Returns the banner message which the server replied with when the
+initial connection was made.
+
+=item domain ()
+
+Returns the domain that the remote SMTP server identified itself as during
+connection.
+
+=item hello ( DOMAIN )
+
+Tell the remote server the mail domain which you are in using the EHLO
+command (or HELO if EHLO fails).  Since this method is invoked
+automatically when the Net::SMTP object is constructed the user should
+normally not have to call it manually.
+
+=item host ()
+
+Returns the value used by the constructor, and passed to IO::Socket::INET,
+to connect to the host.
+
+=item etrn ( DOMAIN )
+
+Request a queue run for the DOMAIN given.
+
+=item auth ( USERNAME, PASSWORD )
+
+Attempt SASL authentication. Requires Authen::SASL module.
+
+=item mail ( ADDRESS [, OPTIONS] )
+
+=item send ( ADDRESS )
+
+=item send_or_mail ( ADDRESS )
+
+=item send_and_mail ( ADDRESS )
+
+Send the appropriate command to the server MAIL, SEND, SOML or SAML. C<ADDRESS>
+is the address of the sender. This initiates the sending of a message. The
+method C<recipient> should be called for each address that the message is to
+be sent to.
+
+The C<mail> method can some additional ESMTP OPTIONS which is passed
+in hash like fashion, using key and value pairs.  Possible options are:
+
+ Size        => <bytes>
+ Return      => "FULL" | "HDRS"
+ Bits        => "7" | "8" | "binary"
+ Transaction => <ADDRESS>
+ Envelope    => <ENVID>     # xtext-encodes its argument
+ ENVID       => <ENVID>     # similar to Envelope, but expects argument encoded
+ XVERP       => 1
+ AUTH        => <submitter> # encoded address according to RFC 2554
+
+The C<Return> and C<Envelope> parameters are used for DSN (Delivery
+Status Notification).
+
+The submitter address in C<AUTH> option is expected to be in a format as
+required by RFC 2554, in an RFC2821-quoted form and xtext-encoded, or <> .
+
+=item reset ()
+
+Reset the status of the server. This may be called after a message has been 
+initiated, but before any data has been sent, to cancel the sending of the
+message.
+
+=item recipient ( ADDRESS [, ADDRESS, [...]] [, OPTIONS ] )
+
+Notify the server that the current message should be sent to all of the
+addresses given. Each address is sent as a separate command to the server.
+Should the sending of any address result in a failure then the process is
+aborted and a I<false> value is returned. It is up to the user to call
+C<reset> if they so desire.
+
+The C<recipient> method can also pass additional case-sensitive OPTIONS as an
+anonymous hash using key and value pairs.  Possible options are:
+
+  Notify  => ['NEVER'] or ['SUCCESS','FAILURE','DELAY']  (see below)
+  ORcpt   => <ORCPT>
+  SkipBad => 1        (to ignore bad addresses)
+
+If C<SkipBad> is true the C<recipient> will not return an error when a bad
+address is encountered and it will return an array of addresses that did
+succeed.
+
+  $smtp->recipient($recipient1,$recipient2);  # Good
+  $smtp->recipient($recipient1,$recipient2, { SkipBad => 1 });  # Good
+  $smtp->recipient($recipient1,$recipient2, { Notify => ['FAILURE','DELAY'], SkipBad => 1 });  # Good
+  @goodrecips=$smtp->recipient(@recipients, { Notify => ['FAILURE'], SkipBad => 1 });  # Good
+  $smtp->recipient("$recipient,$recipient2"); # BAD
+
+Notify is used to request Delivery Status Notifications (DSNs), but your
+SMTP/ESMTP service may not respect this request depending upon its version and
+your site's SMTP configuration.
+
+Leaving out the Notify option usually defaults an SMTP service to its default
+behavior equivalent to ['FAILURE'] notifications only, but again this may be
+dependent upon your site's SMTP configuration.
+
+The NEVER keyword must appear by itself if used within the Notify option and "requests
+that a DSN not be returned to the sender under any conditions."
+
+  {Notify => ['NEVER']}
+
+  $smtp->recipient(@recipients, { Notify => ['NEVER'], SkipBad => 1 });  # Good
+
+You may use any combination of these three values 'SUCCESS','FAILURE','DELAY' in
+the anonymous array reference as defined by RFC3461 (see http://www.ietf.org/rfc/rfc3461.txt
+for more information.  Note: quotations in this topic from same.).
+
+A Notify parameter of 'SUCCESS' or 'FAILURE' "requests that a DSN be issued on
+successful delivery or delivery failure, respectively."
+
+A Notify parameter of 'DELAY' "indicates the sender's willingness to receive
+delayed DSNs.  Delayed DSNs may be issued if delivery of a message has been
+delayed for an unusual amount of time (as determined by the Message Transfer
+Agent (MTA) at which the message is delayed), but the final delivery status
+(whether successful or failure) cannot be determined.  The absence of the DELAY
+keyword in a NOTIFY parameter requests that a "delayed" DSN NOT be issued under
+any conditions."
+
+  {Notify => ['SUCCESS','FAILURE','DELAY']}
+
+  $smtp->recipient(@recipients, { Notify => ['FAILURE','DELAY'], SkipBad => 1 });  # Good
+
+ORcpt is also part of the SMTP DSN extension according to RFC3461.
+It is used to pass along the original recipient that the mail was first
+sent to.  The machine that generates a DSN will use this address to inform
+the sender, because he can't know if recipients get rewritten by mail servers.
+It is expected to be in a format as required by RFC3461, xtext-encoded.
+
+=item to ( ADDRESS [, ADDRESS [...]] )
+
+=item cc ( ADDRESS [, ADDRESS [...]] )
+
+=item bcc ( ADDRESS [, ADDRESS [...]] )
+
+Synonyms for C<recipient>.
+
+=item data ( [ DATA ] )
+
+Initiate the sending of the data from the current message. 
+
+C<DATA> may be a reference to a list or a list. If specified the contents
+of C<DATA> and a termination string C<".\r\n"> is sent to the server. And the
+result will be true if the data was accepted.
+
+If C<DATA> is not specified then the result will indicate that the server
+wishes the data to be sent. The data must then be sent using the C<datasend>
+and C<dataend> methods described in L<Net::Cmd>.
+
+=item expand ( ADDRESS )
+
+Request the server to expand the given address Returns an array
+which contains the text read from the server.
+
+=item verify ( ADDRESS )
+
+Verify that C<ADDRESS> is a legitimate mailing address.
+
+Most sites usually disable this feature in their SMTP service configuration.
+Use "Debug => 1" option under new() to see if disabled.
+
+=item help ( [ $subject ] )
+
+Request help text from the server. Returns the text or undef upon failure
+
+=item quit ()
+
+Send the QUIT command to the remote SMTP server and close the socket connection.
+
+=back
+
+=head1 ADDRESSES
+
+Net::SMTP attempts to DWIM with addresses that are passed. For
+example an application might extract The From: line from an email
+and pass that to mail(). While this may work, it is not recommended.
+The application should really use a module like L<Mail::Address>
+to extract the mail address and pass that.
+
+If C<ExactAddresses> is passed to the constructor, then addresses
+should be a valid rfc2821-quoted address, although Net::SMTP will
+accept the address surrounded by angle brackets.
+
+ funny user@domain      WRONG
+ "funny user"@domain    RIGHT, recommended
+ <"funny user"@domain>  OK
+
+=head1 SEE ALSO
+
+L<Net::Cmd>
+
+=head1 AUTHOR
+
+Graham Barr <gbarr@pobox.com>
+
+=head1 COPYRIGHT
+
+Copyright (c) 1995-2004 Graham Barr. All rights reserved.
+This program is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut

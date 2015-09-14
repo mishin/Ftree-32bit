@@ -1,4 +1,3 @@
-#line 1 "Tie/Array.pm"
 package Tie::Array;
 
 use 5.006_001;
@@ -114,4 +113,172 @@ sub SPLICE
 
 __END__
 
-#line 285
+=head1 NAME
+
+Tie::Array - base class for tied arrays
+
+=head1 SYNOPSIS
+
+    package Tie::NewArray;
+    use Tie::Array;
+    @ISA = ('Tie::Array');
+
+    # mandatory methods
+    sub TIEARRAY { ... }
+    sub FETCH { ... }
+    sub FETCHSIZE { ... }
+
+    sub STORE { ... }       # mandatory if elements writeable
+    sub STORESIZE { ... }   # mandatory if elements can be added/deleted
+    sub EXISTS { ... }      # mandatory if exists() expected to work
+    sub DELETE { ... }      # mandatory if delete() expected to work
+
+    # optional methods - for efficiency
+    sub CLEAR { ... }
+    sub PUSH { ... }
+    sub POP { ... }
+    sub SHIFT { ... }
+    sub UNSHIFT { ... }
+    sub SPLICE { ... }
+    sub EXTEND { ... }
+    sub DESTROY { ... }
+
+    package Tie::NewStdArray;
+    use Tie::Array;
+
+    @ISA = ('Tie::StdArray');
+
+    # all methods provided by default
+
+    package main;
+
+    $object = tie @somearray,'Tie::NewArray';
+    $object = tie @somearray,'Tie::StdArray';
+    $object = tie @somearray,'Tie::NewStdArray';
+
+
+
+=head1 DESCRIPTION
+
+This module provides methods for array-tying classes. See
+L<perltie> for a list of the functions required in order to tie an array
+to a package. The basic B<Tie::Array> package provides stub C<DESTROY>,
+and C<EXTEND> methods that do nothing, stub C<DELETE> and C<EXISTS>
+methods that croak() if the delete() or exists() builtins are ever called
+on the tied array, and implementations of C<PUSH>, C<POP>, C<SHIFT>,
+C<UNSHIFT>, C<SPLICE> and C<CLEAR> in terms of basic C<FETCH>, C<STORE>,
+C<FETCHSIZE>, C<STORESIZE>.
+
+The B<Tie::StdArray> package provides efficient methods required for tied arrays
+which are implemented as blessed references to an "inner" perl array.
+It inherits from B<Tie::Array>, and should cause tied arrays to behave exactly
+like standard arrays, allowing for selective overloading of methods.
+
+For developers wishing to write their own tied arrays, the required methods
+are briefly defined below. See the L<perltie> section for more detailed
+descriptive, as well as example code:
+
+=over 4
+
+=item TIEARRAY classname, LIST
+
+The class method is invoked by the command C<tie @array, classname>. Associates
+an array instance with the specified class. C<LIST> would represent
+additional arguments (along the lines of L<AnyDBM_File> and compatriots) needed
+to complete the association. The method should return an object of a class which
+provides the methods below.
+
+=item STORE this, index, value
+
+Store datum I<value> into I<index> for the tied array associated with
+object I<this>. If this makes the array larger then
+class's mapping of C<undef> should be returned for new positions.
+
+=item FETCH this, index
+
+Retrieve the datum in I<index> for the tied array associated with
+object I<this>.
+
+=item FETCHSIZE this
+
+Returns the total number of items in the tied array associated with
+object I<this>. (Equivalent to C<scalar(@array)>).
+
+=item STORESIZE this, count
+
+Sets the total number of items in the tied array associated with
+object I<this> to be I<count>. If this makes the array larger then
+class's mapping of C<undef> should be returned for new positions.
+If the array becomes smaller then entries beyond count should be
+deleted.
+
+=item EXTEND this, count
+
+Informative call that array is likely to grow to have I<count> entries.
+Can be used to optimize allocation. This method need do nothing.
+
+=item EXISTS this, key
+
+Verify that the element at index I<key> exists in the tied array I<this>.
+
+The B<Tie::Array> implementation is a stub that simply croaks.
+
+=item DELETE this, key
+
+Delete the element at index I<key> from the tied array I<this>.
+
+The B<Tie::Array> implementation is a stub that simply croaks.
+
+=item CLEAR this
+
+Clear (remove, delete, ...) all values from the tied array associated with
+object I<this>.
+
+=item DESTROY this
+
+Normal object destructor method.
+
+=item PUSH this, LIST
+
+Append elements of LIST to the array.
+
+=item POP this
+
+Remove last element of the array and return it.
+
+=item SHIFT this
+
+Remove the first element of the array (shifting other elements down)
+and return it.
+
+=item UNSHIFT this, LIST
+
+Insert LIST elements at the beginning of the array, moving existing elements
+up to make room.
+
+=item SPLICE this, offset, length, LIST
+
+Perform the equivalent of C<splice> on the array.
+
+I<offset> is optional and defaults to zero, negative values count back
+from the end of the array.
+
+I<length> is optional and defaults to rest of the array.
+
+I<LIST> may be empty.
+
+Returns a list of the original I<length> elements at I<offset>.
+
+=back
+
+=head1 CAVEATS
+
+There is no support at present for tied @ISA. There is a potential conflict
+between magic entries needed to notice setting of @ISA, and those needed to
+implement 'tie'.
+
+=head1 AUTHOR
+
+Nick Ing-Simmons E<lt>nik@tiuk.ti.comE<gt>
+
+=cut

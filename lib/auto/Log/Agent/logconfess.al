@@ -1,4 +1,3 @@
-#line 1 "auto/Log/Agent/logconfess.al"
 # NOTE: Derived from blib\lib\Log\Agent.pm.
 # Changes made here will be lost when autosplit is run again.
 # See AutoSplit.pm.

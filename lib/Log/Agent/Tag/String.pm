@@ -1,4 +1,3 @@
-#line 1 "Log/Agent/Tag/String.pm"
 ###########################################################################
 #
 #   String.pm
@@ -70,5 +69,59 @@ sub string		{ $_[0]->{'string'} }
 1;			# for "require"
 __END__
 
-#line 127
+=head1 NAME
+
+Log::Agent::Tag::String - a constant tag string
+
+=head1 SYNOPSIS
+
+ require Log::Agent::Tag::String;
+ # Inherits from Log::Agent::Tag.
+
+ my $tag = Log::Agent::Tag::String->make(
+     -name      => "session id",
+     -value     => $session,
+     -postfix   => 1,
+     -separator => " -- ",
+ );
+
+=head1 DESCRIPTION
+
+This class represents a constant tag string.
+
+=head1 CREATION ROUTINE PARAMETERS
+
+The following parameters are defined, in alphabetical order:
+
+=over 4
+
+=item C<-name> => I<name>
+
+The name of this tag.  Currently unused.
+
+=item C<-postfix> => I<flag>
+
+Whether tag should be placed after or before the log message.
+By default, it is prepended to the log message, i.e. this parameter is false.
+
+=item C<-separator> => I<string>
+
+The separation string between the tag and the log message.
+A single space by default.
+
+=item C<-value> => I<string>
+
+The tag's value.
+
+=back
+
+=head1 AUTHOR
+
+Raphael Manfredi F<E<lt>Raphael_Manfredi@pobox.comE<gt>>
+
+=head1 SEE ALSO
+
+Log::Agent::Tag(3), Log::Agent::Message(3).
+
+=cut
 

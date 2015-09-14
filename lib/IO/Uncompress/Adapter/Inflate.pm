@@ -1,4 +1,3 @@
-#line 1 "IO/Uncompress/Adapter/Inflate.pm"
 package IO::Uncompress::Adapter::Inflate;
 
 use strict;

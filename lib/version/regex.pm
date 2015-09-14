@@ -1,11 +1,10 @@
-#line 1 "version/regex.pm"
 package version::regex;
 
 use strict;
 
 use vars qw($VERSION $CLASS $STRICT $LAX);
 
-$VERSION = 0.9912;
+$VERSION = 0.9908;
 
 #--------------------------------------------------------------------------#
 # Version regexp components

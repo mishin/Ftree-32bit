@@ -1,4 +1,3 @@
-#line 1 "IO/Compress/Base/Common.pm"
 package IO::Compress::Base::Common;
 
 use strict ;

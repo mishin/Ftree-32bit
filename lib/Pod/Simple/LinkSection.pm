@@ -1,4 +1,3 @@
-#line 1 "Pod/Simple/LinkSection.pm"
 
 require 5;
 package Pod::Simple::LinkSection;
@@ -73,4 +72,103 @@ __END__
 
 __END__
 
-#line 175
+=head1 NAME
+
+Pod::Simple::LinkSection -- represent "section" attributes of L codes
+
+=head1 SYNOPSIS
+
+ # a long story
+
+=head1 DESCRIPTION
+
+This class is not of interest to general users.
+
+Pod::Simple uses this class for representing the value of the
+"section" attribute of "L" start-element events.  Most applications
+can just use the normal stringification of objects of this class;
+they stringify to just the text content of the section,
+such as "foo" for
+C<< LZ<><Stuff/foo> >>, and "bar" for 
+C<< LZ<><Stuff/bIZ<><ar>> >>.
+
+However, anyone particularly interested in getting the full value of
+the treelet, can just traverse the content of the treeleet
+@$treelet_object.  To wit:
+
+
+  % perl -MData::Dumper -e
+    "use base qw(Pod::Simple::Methody);
+     sub start_L { print Dumper($_[1]{'section'} ) }
+     __PACKAGE__->new->parse_string_document('=head1 L<Foo/bI<ar>baz>>')
+    "
+Output:
+  $VAR1 = bless( [
+                   '',
+                   {},
+                   'b',
+                   bless( [
+                            'I',
+                            {},
+                            'ar'
+                          ], 'Pod::Simple::LinkSection' ),
+                   'baz'
+                 ], 'Pod::Simple::LinkSection' );
+
+But stringify it and you get just the text content:
+
+  % perl -MData::Dumper -e
+    "use base qw(Pod::Simple::Methody);
+     sub start_L { print Dumper( '' . $_[1]{'section'} ) }
+     __PACKAGE__->new->parse_string_document('=head1 L<Foo/bI<ar>baz>>')
+    "
+Output:
+  $VAR1 = 'barbaz';
+
+
+=head1 SEE ALSO
+
+L<Pod::Simple>
+
+=head1 SUPPORT
+
+Questions or discussion about POD and Pod::Simple should be sent to the
+pod-people@perl.org mail list. Send an empty email to
+pod-people-subscribe@perl.org to subscribe.
+
+This module is managed in an open GitHub repository,
+L<https://github.com/theory/pod-simple/>. Feel free to fork and contribute, or
+to clone L<git://github.com/theory/pod-simple.git> and send patches!
+
+Patches against Pod::Simple are welcome. Please send bug reports to
+<bug-pod-simple@rt.cpan.org>.
+
+=head1 COPYRIGHT AND DISCLAIMERS
+
+Copyright (c) 2004 Sean M. Burke.
+
+This library is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+This program is distributed in the hope that it will be useful, but
+without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+=head1 AUTHOR
+
+Pod::Simple was created by Sean M. Burke <sburke@cpan.org>.
+But don't bother him, he's retired.
+
+Pod::Simple is maintained by:
+
+=over
+
+=item * Allison Randal C<allison@perl.org>
+
+=item * Hans Dieter Pearcey C<hdp@cpan.org>
+
+=item * David E. Wheeler C<dwheeler@cpan.org>
+
+=back
+
+=cut

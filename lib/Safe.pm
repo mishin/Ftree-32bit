@@ -1,4 +1,3 @@
-#line 1 "Safe.pm"
 package Safe;
 
 use 5.003_11;
@@ -464,5 +463,347 @@ sub rdo {
 
 __END__
 
-#line 809
+=head1 NAME
+
+Safe - Compile and execute code in restricted compartments
+
+=head1 SYNOPSIS
+
+  use Safe;
+
+  $compartment = new Safe;
+
+  $compartment->permit(qw(time sort :browse));
+
+  $result = $compartment->reval($unsafe_code);
+
+=head1 DESCRIPTION
+
+The Safe extension module allows the creation of compartments
+in which perl code can be evaluated. Each compartment has
+
+=over 8
+
+=item a new namespace
+
+The "root" of the namespace (i.e. "main::") is changed to a
+different package and code evaluated in the compartment cannot
+refer to variables outside this namespace, even with run-time
+glob lookups and other tricks.
+
+Code which is compiled outside the compartment can choose to place
+variables into (or I<share> variables with) the compartment's namespace
+and only that data will be visible to code evaluated in the
+compartment.
+
+By default, the only variables shared with compartments are the
+"underscore" variables $_ and @_ (and, technically, the less frequently
+used %_, the _ filehandle and so on). This is because otherwise perl
+operators which default to $_ will not work and neither will the
+assignment of arguments to @_ on subroutine entry.
+
+=item an operator mask
+
+Each compartment has an associated "operator mask". Recall that
+perl code is compiled into an internal format before execution.
+Evaluating perl code (e.g. via "eval" or "do 'file'") causes
+the code to be compiled into an internal format and then,
+provided there was no error in the compilation, executed.
+Code evaluated in a compartment compiles subject to the
+compartment's operator mask. Attempting to evaluate code in a
+compartment which contains a masked operator will cause the
+compilation to fail with an error. The code will not be executed.
+
+The default operator mask for a newly created compartment is
+the ':default' optag.
+
+It is important that you read the L<Opcode> module documentation
+for more information, especially for detailed definitions of opnames,
+optags and opsets.
+
+Since it is only at the compilation stage that the operator mask
+applies, controlled access to potentially unsafe operations can
+be achieved by having a handle to a wrapper subroutine (written
+outside the compartment) placed into the compartment. For example,
+
+    $cpt = new Safe;
+    sub wrapper {
+      # vet arguments and perform potentially unsafe operations
+    }
+    $cpt->share('&wrapper');
+
+=back
+
+
+=head1 WARNING
+
+The authors make B<no warranty>, implied or otherwise, about the
+suitability of this software for safety or security purposes.
+
+The authors shall not in any case be liable for special, incidental,
+consequential, indirect or other similar damages arising from the use
+of this software.
+
+Your mileage will vary. If in any doubt B<do not use it>.
+
+
+=head1 METHODS
+
+To create a new compartment, use
+
+    $cpt = new Safe;
+
+Optional argument is (NAMESPACE), where NAMESPACE is the root namespace
+to use for the compartment (defaults to "Safe::Root0", incremented for
+each new compartment).
+
+Note that version 1.00 of the Safe module supported a second optional
+parameter, MASK.  That functionality has been withdrawn pending deeper
+consideration. Use the permit and deny methods described below.
+
+The following methods can then be used on the compartment
+object returned by the above constructor. The object argument
+is implicit in each case.
+
+
+=head2 permit (OP, ...)
+
+Permit the listed operators to be used when compiling code in the
+compartment (in I<addition> to any operators already permitted).
+
+You can list opcodes by names, or use a tag name; see
+L<Opcode/"Predefined Opcode Tags">.
+
+=head2 permit_only (OP, ...)
+
+Permit I<only> the listed operators to be used when compiling code in
+the compartment (I<no> other operators are permitted).
+
+=head2 deny (OP, ...)
+
+Deny the listed operators from being used when compiling code in the
+compartment (other operators may still be permitted).
+
+=head2 deny_only (OP, ...)
+
+Deny I<only> the listed operators from being used when compiling code
+in the compartment (I<all> other operators will be permitted, so you probably
+don't want to use this method).
+
+=head2 trap (OP, ...), untrap (OP, ...)
+
+The trap and untrap methods are synonyms for deny and permit
+respectfully.
+
+=head2 share (NAME, ...)
+
+This shares the variable(s) in the argument list with the compartment.
+This is almost identical to exporting variables using the L<Exporter>
+module.
+
+Each NAME must be the B<name> of a non-lexical variable, typically
+with the leading type identifier included. A bareword is treated as a
+function name.
+
+Examples of legal names are '$foo' for a scalar, '@foo' for an
+array, '%foo' for a hash, '&foo' or 'foo' for a subroutine and '*foo'
+for a glob (i.e.  all symbol table entries associated with "foo",
+including scalar, array, hash, sub and filehandle).
+
+Each NAME is assumed to be in the calling package. See share_from
+for an alternative method (which C<share> uses).
+
+=head2 share_from (PACKAGE, ARRAYREF)
+
+This method is similar to share() but allows you to explicitly name the
+package that symbols should be shared from. The symbol names (including
+type characters) are supplied as an array reference.
+
+    $safe->share_from('main', [ '$foo', '%bar', 'func' ]);
+
+Names can include package names, which are relative to the specified PACKAGE.
+So these two calls have the same effect:
+
+    $safe->share_from('Scalar::Util', [ 'reftype' ]);
+    $safe->share_from('main', [ 'Scalar::Util::reftype' ]);
+
+=head2 varglob (VARNAME)
+
+This returns a glob reference for the symbol table entry of VARNAME in
+the package of the compartment. VARNAME must be the B<name> of a
+variable without any leading type marker. For example:
+
+    ${$cpt->varglob('foo')} = "Hello world";
+
+has the same effect as:
+
+    $cpt = new Safe 'Root';
+    $Root::foo = "Hello world";
+
+but avoids the need to know $cpt's package name.
+
+
+=head2 reval (STRING, STRICT)
+
+This evaluates STRING as perl code inside the compartment.
+
+The code can only see the compartment's namespace (as returned by the
+B<root> method). The compartment's root package appears to be the
+C<main::> package to the code inside the compartment.
+
+Any attempt by the code in STRING to use an operator which is not permitted
+by the compartment will cause an error (at run-time of the main program
+but at compile-time for the code in STRING).  The error is of the form
+"'%s' trapped by operation mask...".
+
+If an operation is trapped in this way, then the code in STRING will
+not be executed. If such a trapped operation occurs or any other
+compile-time or return error, then $@ is set to the error message, just
+as with an eval().
+
+If there is no error, then the method returns the value of the last
+expression evaluated, or a return statement may be used, just as with
+subroutines and B<eval()>. The context (list or scalar) is determined
+by the caller as usual.
+
+If the return value of reval() is (or contains) any code reference,
+those code references are wrapped to be themselves executed always
+in the compartment. See L</wrap_code_refs_within>.
+
+The formerly undocumented STRICT argument sets strictness: if true
+'use strict;' is used, otherwise it uses 'no strict;'. B<Note>: if
+STRICT is omitted 'no strict;' is the default.
+
+Some points to note:
+
+If the entereval op is permitted then the code can use eval "..." to
+'hide' code which might use denied ops. This is not a major problem
+since when the code tries to execute the eval it will fail because the
+opmask is still in effect. However this technique would allow clever,
+and possibly harmful, code to 'probe' the boundaries of what is
+possible.
+
+Any string eval which is executed by code executing in a compartment,
+or by code called from code executing in a compartment, will be eval'd
+in the namespace of the compartment. This is potentially a serious
+problem.
+
+Consider a function foo() in package pkg compiled outside a compartment
+but shared with it. Assume the compartment has a root package called
+'Root'. If foo() contains an eval statement like eval '$foo = 1' then,
+normally, $pkg::foo will be set to 1.  If foo() is called from the
+compartment (by whatever means) then instead of setting $pkg::foo, the
+eval will actually set $Root::pkg::foo.
+
+This can easily be demonstrated by using a module, such as the Socket
+module, which uses eval "..." as part of an AUTOLOAD function. You can
+'use' the module outside the compartment and share an (autoloaded)
+function with the compartment. If an autoload is triggered by code in
+the compartment, or by any code anywhere that is called by any means
+from the compartment, then the eval in the Socket module's AUTOLOAD
+function happens in the namespace of the compartment. Any variables
+created or used by the eval'd code are now under the control of
+the code in the compartment.
+
+A similar effect applies to I<all> runtime symbol lookups in code
+called from a compartment but not compiled within it.
+
+=head2 rdo (FILENAME)
+
+This evaluates the contents of file FILENAME inside the compartment.
+See above documentation on the B<reval> method for further details.
+
+=head2 root (NAMESPACE)
+
+This method returns the name of the package that is the root of the
+compartment's namespace.
+
+Note that this behaviour differs from version 1.00 of the Safe module
+where the root module could be used to change the namespace. That
+functionality has been withdrawn pending deeper consideration.
+
+=head2 mask (MASK)
+
+This is a get-or-set method for the compartment's operator mask.
+
+With no MASK argument present, it returns the current operator mask of
+the compartment.
+
+With the MASK argument present, it sets the operator mask for the
+compartment (equivalent to calling the deny_only method).
+
+=head2 wrap_code_ref (CODEREF)
+
+Returns a reference to an anonymous subroutine that, when executed, will call
+CODEREF with the Safe compartment 'in effect'.  In other words, with the
+package namespace adjusted and the opmask enabled.
+
+Note that the opmask doesn't affect the already compiled code, it only affects
+any I<further> compilation that the already compiled code may try to perform.
+
+This is particularly useful when applied to code references returned from reval().
+
+(It also provides a kind of workaround for RT#60374: "Safe.pm sort {} bug with
+-Dusethreads". See L<http://rt.perl.org/rt3//Public/Bug/Display.html?id=60374>
+for I<much> more detail.)
+
+=head2 wrap_code_refs_within (...)
+
+Wraps any CODE references found within the arguments by replacing each with the
+result of calling L</wrap_code_ref> on the CODE reference. Any ARRAY or HASH
+references in the arguments are inspected recursively.
+
+Returns nothing.
+
+=head1 RISKS
+
+This section is just an outline of some of the things code in a compartment
+might do (intentionally or unintentionally) which can have an effect outside
+the compartment.
+
+=over 8
+
+=item Memory
+
+Consuming all (or nearly all) available memory.
+
+=item CPU
+
+Causing infinite loops etc.
+
+=item Snooping
+
+Copying private information out of your system. Even something as
+simple as your user name is of value to others. Much useful information
+could be gleaned from your environment variables for example.
+
+=item Signals
+
+Causing signals (especially SIGFPE and SIGALARM) to affect your process.
+
+Setting up a signal handler will need to be carefully considered
+and controlled.  What mask is in effect when a signal handler
+gets called?  If a user can get an imported function to get an
+exception and call the user's signal handler, does that user's
+restricted mask get re-instated before the handler is called?
+Does an imported handler get called with its original mask or
+the user's one?
+
+=item State Changes
+
+Ops such as chdir obviously effect the process as a whole and not just
+the code in the compartment. Ops such as rand and srand have a similar
+but more subtle effect.
+
+=back
+
+=head1 AUTHOR
+
+Originally designed and implemented by Malcolm Beattie.
+
+Reworked to use the Opcode module and other changes added by Tim Bunce.
+
+Currently maintained by the Perl 5 Porters, <perl5-porters@perl.org>.
+
+=cut
 

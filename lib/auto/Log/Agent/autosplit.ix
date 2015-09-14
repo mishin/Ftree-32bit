@@ -1,4 +1,3 @@
-#line 1 "auto/Log/Agent/autosplit.ix"
 # Index created by AutoSplit for blib\lib\Log\Agent.pm
 #    (file acts as timestamp)
 package Log::Agent;

@@ -1,4 +1,3 @@
-#line 1 "Net/FTP.pm"
 # Net::FTP.pm
 #
 # Copyright (c) 1995-2004 Graham Barr <gbarr@pobox.com>. All rights reserved.
@@ -1274,4 +1273,589 @@ sub _REIN { shift->unsupported(@_) }
 
 __END__
 
-#line 1862
+=head1 NAME
+
+Net::FTP - FTP Client class
+
+=head1 SYNOPSIS
+
+    use Net::FTP;
+
+    $ftp = Net::FTP->new("some.host.name", Debug => 0)
+      or die "Cannot connect to some.host.name: $@";
+
+    $ftp->login("anonymous",'-anonymous@')
+      or die "Cannot login ", $ftp->message;
+
+    $ftp->cwd("/pub")
+      or die "Cannot change working directory ", $ftp->message;
+
+    $ftp->get("that.file")
+      or die "get failed ", $ftp->message;
+
+    $ftp->quit;
+
+=head1 DESCRIPTION
+
+C<Net::FTP> is a class implementing a simple FTP client in Perl as
+described in RFC959.  It provides wrappers for a subset of the RFC959
+commands.
+
+The Net::FTP class is a subclass of Net::Cmd and IO::Socket::INET.
+
+=head1 OVERVIEW
+
+FTP stands for File Transfer Protocol.  It is a way of transferring
+files between networked machines.  The protocol defines a client
+(whose commands are provided by this module) and a server (not
+implemented in this module).  Communication is always initiated by the
+client, and the server responds with a message and a status code (and
+sometimes with data).
+
+The FTP protocol allows files to be sent to or fetched from the
+server.  Each transfer involves a B<local file> (on the client) and a
+B<remote file> (on the server).  In this module, the same file name
+will be used for both local and remote if only one is specified.  This
+means that transferring remote file C</path/to/file> will try to put
+that file in C</path/to/file> locally, unless you specify a local file
+name.
+
+The protocol also defines several standard B<translations> which the
+file can undergo during transfer.  These are ASCII, EBCDIC, binary,
+and byte.  ASCII is the default type, and indicates that the sender of
+files will translate the ends of lines to a standard representation
+which the receiver will then translate back into their local
+representation.  EBCDIC indicates the file being transferred is in
+EBCDIC format.  Binary (also known as image) format sends the data as
+a contiguous bit stream.  Byte format transfers the data as bytes, the
+values of which remain the same regardless of differences in byte size
+between the two machines (in theory - in practice you should only use
+this if you really know what you're doing).
+
+=head1 CONSTRUCTOR
+
+=over 4
+
+=item new ([ HOST ] [, OPTIONS ])
+
+This is the constructor for a new Net::FTP object. C<HOST> is the
+name of the remote host to which an FTP connection is required.
+
+C<HOST> is optional. If C<HOST> is not given then it may instead be
+passed as the C<Host> option described below. 
+
+C<OPTIONS> are passed in a hash like fashion, using key and value pairs.
+Possible options are:
+
+B<Host> - FTP host to connect to. It may be a single scalar, as defined for
+the C<PeerAddr> option in L<IO::Socket::INET>, or a reference to
+an array with hosts to try in turn. The L</host> method will return the value
+which was used to connect to the host.
+
+
+B<Firewall> - The name of a machine which acts as an FTP firewall. This can be
+overridden by an environment variable C<FTP_FIREWALL>. If specified, and the
+given host cannot be directly connected to, then the
+connection is made to the firewall machine and the string C<@hostname> is
+appended to the login identifier. This kind of setup is also referred to
+as an ftp proxy.
+
+B<FirewallType> - The type of firewall running on the machine indicated by
+B<Firewall>. This can be overridden by an environment variable
+C<FTP_FIREWALL_TYPE>. For a list of permissible types, see the description of
+ftp_firewall_type in L<Net::Config>.
+
+B<BlockSize> - This is the block size that Net::FTP will use when doing
+transfers. (defaults to 10240)
+
+B<Port> - The port number to connect to on the remote machine for the
+FTP connection
+
+B<Timeout> - Set a timeout value in seconds (defaults to 120)
+
+B<Debug> - debug level (see the debug method in L<Net::Cmd>)
+
+B<Passive> - If set to a non-zero value then all data transfers will
+be done using passive mode. If set to zero then data transfers will be
+done using active mode.  If the machine is connected to the Internet
+directly, both passive and active mode should work equally well.
+Behind most firewall and NAT configurations passive mode has a better
+chance of working.  However, in some rare firewall configurations,
+active mode actually works when passive mode doesn't.  Some really old
+FTP servers might not implement passive transfers.  If not specified,
+then the transfer mode is set by the environment variable
+C<FTP_PASSIVE> or if that one is not set by the settings done by the
+F<libnetcfg> utility.  If none of these apply then passive mode is
+used.
+
+B<Hash> - If given a reference to a file handle (e.g., C<\*STDERR>),
+print hash marks (#) on that filehandle every 1024 bytes.  This
+simply invokes the C<hash()> method for you, so that hash marks
+are displayed for all transfers.  You can, of course, call C<hash()>
+explicitly whenever you'd like.
+
+B<LocalAddr> - Local address to use for all socket connections, this
+argument will be passed to L<IO::Socket::INET>
+
+If the constructor fails undef will be returned and an error message will
+be in $@
+
+=back
+
+=head1 METHODS
+
+Unless otherwise stated all methods return either a I<true> or I<false>
+value, with I<true> meaning that the operation was a success. When a method
+states that it returns a value, failure will be returned as I<undef> or an
+empty list.
+
+C<Net::FTP> inherits from C<Net::Cmd> so methods defined in C<Net::Cmd> may
+be used to send commands to the remote FTP server in addition to the methods
+documented here.
+
+=over 4
+
+=item login ([LOGIN [,PASSWORD [, ACCOUNT] ] ])
+
+Log into the remote FTP server with the given login information. If
+no arguments are given then the C<Net::FTP> uses the C<Net::Netrc>
+package to lookup the login information for the connected host.
+If no information is found then a login of I<anonymous> is used.
+If no password is given and the login is I<anonymous> then I<anonymous@>
+will be used for password.
+
+If the connection is via a firewall then the C<authorize> method will
+be called with no arguments.
+
+=item authorize ( [AUTH [, RESP]])
+
+This is a protocol used by some firewall ftp proxies. It is used
+to authorise the user to send data out.  If both arguments are not specified
+then C<authorize> uses C<Net::Netrc> to do a lookup.
+
+=item site (ARGS)
+
+Send a SITE command to the remote server and wait for a response.
+
+Returns most significant digit of the response code.
+
+=item ascii
+
+Transfer file in ASCII. CRLF translation will be done if required
+
+=item binary
+
+Transfer file in binary mode. No transformation will be done.
+
+B<Hint>: If both server and client machines use the same line ending for
+text files, then it will be faster to transfer all files in binary mode.
+
+=item rename ( OLDNAME, NEWNAME )
+
+Rename a file on the remote FTP server from C<OLDNAME> to C<NEWNAME>. This
+is done by sending the RNFR and RNTO commands.
+
+=item delete ( FILENAME )
+
+Send a request to the server to delete C<FILENAME>.
+
+=item cwd ( [ DIR ] )
+
+Attempt to change directory to the directory given in C<$dir>.  If
+C<$dir> is C<"..">, the FTP C<CDUP> command is used to attempt to
+move up one directory. If no directory is given then an attempt is made
+to change the directory to the root directory.
+
+=item cdup ()
+
+Change directory to the parent of the current directory.
+
+=item passive ( [ PASSIVE ] )
+
+Set or get if data connections will be initiated in passive mode.
+
+=item pwd ()
+
+Returns the full pathname of the current directory.
+
+=item restart ( WHERE )
+
+Set the byte offset at which to begin the next data transfer. Net::FTP simply
+records this value and uses it when during the next data transfer. For this
+reason this method will not return an error, but setting it may cause
+a subsequent data transfer to fail.
+
+=item rmdir ( DIR [, RECURSE ])
+
+Remove the directory with the name C<DIR>. If C<RECURSE> is I<true> then
+C<rmdir> will attempt to delete everything inside the directory.
+
+=item mkdir ( DIR [, RECURSE ])
+
+Create a new directory with the name C<DIR>. If C<RECURSE> is I<true> then
+C<mkdir> will attempt to create all the directories in the given path.
+
+Returns the full pathname to the new directory.
+
+=item alloc ( SIZE [, RECORD_SIZE] )
+
+The alloc command allows you to give the ftp server a hint about the size
+of the file about to be transferred using the ALLO ftp command. Some storage
+systems use this to make intelligent decisions about how to store the file.
+The C<SIZE> argument represents the size of the file in bytes. The
+C<RECORD_SIZE> argument indicates a maximum record or page size for files
+sent with a record or page structure.
+
+The size of the file will be determined, and sent to the server
+automatically for normal files so that this method need only be called if
+you are transferring data from a socket, named pipe, or other stream not
+associated with a normal file.
+
+=item ls ( [ DIR ] )
+
+Get a directory listing of C<DIR>, or the current directory.
+
+In an array context, returns a list of lines returned from the server. In
+a scalar context, returns a reference to a list.
+
+=item dir ( [ DIR ] )
+
+Get a directory listing of C<DIR>, or the current directory in long format.
+
+In an array context, returns a list of lines returned from the server. In
+a scalar context, returns a reference to a list.
+
+=item get ( REMOTE_FILE [, LOCAL_FILE [, WHERE]] )
+
+Get C<REMOTE_FILE> from the server and store locally. C<LOCAL_FILE> may be
+a filename or a filehandle. If not specified, the file will be stored in
+the current directory with the same leafname as the remote file.
+
+If C<WHERE> is given then the first C<WHERE> bytes of the file will
+not be transferred, and the remaining bytes will be appended to
+the local file if it already exists.
+
+Returns C<LOCAL_FILE>, or the generated local file name if C<LOCAL_FILE>
+is not given. If an error was encountered undef is returned.
+
+=item put ( LOCAL_FILE [, REMOTE_FILE ] )
+
+Put a file on the remote server. C<LOCAL_FILE> may be a name or a filehandle.
+If C<LOCAL_FILE> is a filehandle then C<REMOTE_FILE> must be specified. If
+C<REMOTE_FILE> is not specified then the file will be stored in the current
+directory with the same leafname as C<LOCAL_FILE>.
+
+Returns C<REMOTE_FILE>, or the generated remote filename if C<REMOTE_FILE>
+is not given.
+
+B<NOTE>: If for some reason the transfer does not complete and an error is
+returned then the contents that had been transferred will not be remove
+automatically.
+
+=item put_unique ( LOCAL_FILE [, REMOTE_FILE ] )
+
+Same as put but uses the C<STOU> command.
+
+Returns the name of the file on the server.
+
+=item append ( LOCAL_FILE [, REMOTE_FILE ] )
+
+Same as put but appends to the file on the remote server.
+
+Returns C<REMOTE_FILE>, or the generated remote filename if C<REMOTE_FILE>
+is not given.
+
+=item unique_name ()
+
+Returns the name of the last file stored on the server using the
+C<STOU> command.
+
+=item mdtm ( FILE )
+
+Returns the I<modification time> of the given file
+
+=item size ( FILE )
+
+Returns the size in bytes for the given file as stored on the remote server.
+
+B<NOTE>: The size reported is the size of the stored file on the remote server.
+If the file is subsequently transferred from the server in ASCII mode
+and the remote server and local machine have different ideas about
+"End Of Line" then the size of file on the local machine after transfer
+may be different.
+
+=item supported ( CMD )
+
+Returns TRUE if the remote server supports the given command.
+
+=item hash ( [FILEHANDLE_GLOB_REF],[ BYTES_PER_HASH_MARK] )
+
+Called without parameters, or with the first argument false, hash marks
+are suppressed.  If the first argument is true but not a reference to a 
+file handle glob, then \*STDERR is used.  The second argument is the number
+of bytes per hash mark printed, and defaults to 1024.  In all cases the
+return value is a reference to an array of two:  the filehandle glob reference
+and the bytes per hash mark.
+
+=item feature ( NAME )
+
+Determine if the server supports the specified feature. The return
+value is a list of lines the server responded with to describe the
+options that it supports for the given feature. If the feature is
+unsupported then the empty list is returned.
+
+  if ($ftp->feature( 'MDTM' )) {
+    # Do something
+  }
+
+  if (grep { /\bTLS\b/ } $ftp->feature('AUTH')) {
+    # Server supports TLS
+  }
+
+=back
+
+The following methods can return different results depending on
+how they are called. If the user explicitly calls either
+of the C<pasv> or C<port> methods then these methods will
+return a I<true> or I<false> value. If the user does not
+call either of these methods then the result will be a
+reference to a C<Net::FTP::dataconn> based object.
+
+=over 4
+
+=item nlst ( [ DIR ] )
+
+Send an C<NLST> command to the server, with an optional parameter.
+
+=item list ( [ DIR ] )
+
+Same as C<nlst> but using the C<LIST> command
+
+=item retr ( FILE )
+
+Begin the retrieval of a file called C<FILE> from the remote server.
+
+=item stor ( FILE )
+
+Tell the server that you wish to store a file. C<FILE> is the
+name of the new file that should be created.
+
+=item stou ( FILE )
+
+Same as C<stor> but using the C<STOU> command. The name of the unique
+file which was created on the server will be available via the C<unique_name>
+method after the data connection has been closed.
+
+=item appe ( FILE )
+
+Tell the server that we want to append some data to the end of a file
+called C<FILE>. If this file does not exist then create it.
+
+=back
+
+If for some reason you want to have complete control over the data connection,
+this includes generating it and calling the C<response> method when required,
+then the user can use these methods to do so.
+
+However calling these methods only affects the use of the methods above that
+can return a data connection. They have no effect on methods C<get>, C<put>,
+C<put_unique> and those that do not require data connections.
+
+=over 4
+
+=item port ( [ PORT ] )
+
+Send a C<PORT> command to the server. If C<PORT> is specified then it is sent
+to the server. If not, then a listen socket is created and the correct information
+sent to the server.
+
+=item pasv ()
+
+Tell the server to go into passive mode. Returns the text that represents the
+port on which the server is listening, this text is in a suitable form to
+sent to another ftp server using the C<port> method.
+
+=back
+
+The following methods can be used to transfer files between two remote
+servers, providing that these two servers can connect directly to each other.
+
+=over 4
+
+=item pasv_xfer ( SRC_FILE, DEST_SERVER [, DEST_FILE ] )
+
+This method will do a file transfer between two remote ftp servers. If
+C<DEST_FILE> is omitted then the leaf name of C<SRC_FILE> will be used.
+
+=item pasv_xfer_unique ( SRC_FILE, DEST_SERVER [, DEST_FILE ] )
+
+Like C<pasv_xfer> but the file is stored on the remote server using
+the STOU command.
+
+=item pasv_wait ( NON_PASV_SERVER )
+
+This method can be used to wait for a transfer to complete between a passive
+server and a non-passive server. The method should be called on the passive
+server with the C<Net::FTP> object for the non-passive server passed as an
+argument.
+
+=item abort ()
+
+Abort the current data transfer.
+
+=item quit ()
+
+Send the QUIT command to the remote FTP server and close the socket connection.
+
+=back
+
+=head2 Methods for the adventurous
+
+=over 4
+
+=item quot (CMD [,ARGS])
+
+Send a command, that Net::FTP does not directly support, to the remote
+server and wait for a response.
+
+Returns most significant digit of the response code.
+
+B<WARNING> This call should only be used on commands that do not require
+data connections. Misuse of this method can hang the connection.
+
+=back
+
+=head1 THE dataconn CLASS
+
+Some of the methods defined in C<Net::FTP> return an object which will
+be derived from this class.The dataconn class itself is derived from
+the C<IO::Socket::INET> class, so any normal IO operations can be performed.
+However the following methods are defined in the dataconn class and IO should
+be performed using these.
+
+=over 4
+
+=item read ( BUFFER, SIZE [, TIMEOUT ] )
+
+Read C<SIZE> bytes of data from the server and place it into C<BUFFER>, also
+performing any <CRLF> translation necessary. C<TIMEOUT> is optional, if not
+given, the timeout value from the command connection will be used.
+
+Returns the number of bytes read before any <CRLF> translation.
+
+=item write ( BUFFER, SIZE [, TIMEOUT ] )
+
+Write C<SIZE> bytes of data from C<BUFFER> to the server, also
+performing any <CRLF> translation necessary. C<TIMEOUT> is optional, if not
+given, the timeout value from the command connection will be used.
+
+Returns the number of bytes written before any <CRLF> translation.
+
+=item bytes_read ()
+
+Returns the number of bytes read so far.
+
+=item abort ()
+
+Abort the current data transfer.
+
+=item close ()
+
+Close the data connection and get a response from the FTP server. Returns
+I<true> if the connection was closed successfully and the first digit of
+the response from the server was a '2'.
+
+=back
+
+=head1 UNIMPLEMENTED
+
+The following RFC959 commands have not been implemented:
+
+=over 4
+
+=item B<SMNT>
+
+Mount a different file system structure without changing login or
+accounting information.
+
+=item B<HELP>
+
+Ask the server for "helpful information" (that's what the RFC says) on
+the commands it accepts.
+
+=item B<MODE>
+
+Specifies transfer mode (stream, block or compressed) for file to be
+transferred.
+
+=item B<SYST>
+
+Request remote server system identification.
+
+=item B<STAT>
+
+Request remote server status.
+
+=item B<STRU>
+
+Specifies file structure for file to be transferred.
+
+=item B<REIN>
+
+Reinitialize the connection, flushing all I/O and account information.
+
+=back
+
+=head1 REPORTING BUGS
+
+When reporting bugs/problems please include as much information as possible.
+It may be difficult for me to reproduce the problem as almost every setup
+is different.
+
+A small script which yields the problem will probably be of help. It would
+also be useful if this script was run with the extra options C<Debug => 1>
+passed to the constructor, and the output sent with the bug report. If you
+cannot include a small script then please include a Debug trace from a
+run of your program which does yield the problem.
+
+=head1 AUTHOR
+
+Graham Barr <gbarr@pobox.com>
+
+=head1 SEE ALSO
+
+L<Net::Netrc>
+L<Net::Cmd>
+
+ftp(1), ftpd(8), RFC 959
+http://www.ietf.org/rfc/rfc959.txt
+
+=head1 USE EXAMPLES
+
+For an example of the use of Net::FTP see
+
+=over 4
+
+=item http://www.csh.rit.edu/~adam/Progs/
+
+C<autoftp> is a program that can retrieve, send, or list files via
+the FTP protocol in a non-interactive manner.
+
+=back
+
+=head1 CREDITS
+
+Henry Gabryjelski <henryg@WPI.EDU> - for the suggestion of creating directories
+recursively.
+
+Nathan Torkington <gnat@frii.com> - for some input on the documentation.
+
+Roderick Schertler <roderick@gate.net> - for various inputs
+
+=head1 COPYRIGHT
+
+Copyright (c) 1995-2004 Graham Barr. All rights reserved.
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+
+=cut

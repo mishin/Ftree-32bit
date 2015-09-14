@@ -1,4 +1,3 @@
-#line 1 "Pod/Simple/Transcode.pm"
 
 require 5;
 package Pod::Simple::Transcode;

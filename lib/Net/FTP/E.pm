@@ -1,4 +1,3 @@
-#line 1 "Net/FTP/E.pm"
 package Net::FTP::E;
 
 require Net::FTP::I;

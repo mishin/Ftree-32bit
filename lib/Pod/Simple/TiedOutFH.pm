@@ -1,4 +1,3 @@
-#line 1 "Pod/Simple/TiedOutFH.pm"
 
 use strict;
 package Pod::Simple::TiedOutFH;

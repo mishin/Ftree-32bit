@@ -1,4 +1,3 @@
-#line 1 "Pod/Escapes.pm"
 package Pod::Escapes;
 use strict;
 use warnings;
@@ -528,7 +527,163 @@ sub e2charnum {
 1;
 __END__
 
-#line 687
+=head1 NAME
+
+Pod::Escapes - for resolving Pod EE<lt>...E<gt> sequences
+
+=head1 SYNOPSIS
+
+  use Pod::Escapes qw(e2char);
+  ...la la la, parsing POD, la la la...
+  $text = e2char($e_node->label);
+  unless(defined $text) {
+    print "Unknown E sequence \"", $e_node->label, "\"!";
+  }
+  ...else print/interpolate $text...
+
+=head1 DESCRIPTION
+
+This module provides things that are useful in decoding
+Pod EE<lt>...E<gt> sequences.  Presumably, it should be used
+only by Pod parsers and/or formatters.
+
+By default, Pod::Escapes exports none of its symbols.  But
+you can request any of them to be exported.
+Either request them individually, as with
+C<use Pod::Escapes qw(symbolname symbolname2...);>,
+or you can do C<use Pod::Escapes qw(:ALL);> to get all
+exportable symbols.
+
+=head1 GOODIES
+
+=over
+
+=item e2char($e_content)
+
+Given a name or number that could appear in a
+C<EE<lt>name_or_numE<gt>> sequence, this returns the string that
+it stands for.  For example, C<e2char('sol')>, C<e2char('47')>,
+C<e2char('0x2F')>, and C<e2char('057')> all return "/",
+because C<EE<lt>solE<gt>>, C<EE<lt>47E<gt>>, C<EE<lt>0x2fE<gt>>,
+and C<EE<lt>057E<gt>>, all mean "/".  If
+the name has no known value (as with a name of "qacute") or is
+syntactically invalid (as with a name of "1/4"), this returns undef.
+
+=item e2charnum($e_content)
+
+Given a name or number that could appear in a
+C<EE<lt>name_or_numE<gt>> sequence, this returns the number of
+the Unicode character that this stands for.  For example,
+C<e2char('sol')>, C<e2char('47')>,
+C<e2char('0x2F')>, and C<e2char('057')> all return 47,
+because C<EE<lt>solE<gt>>, C<EE<lt>47E<gt>>, C<EE<lt>0x2fE<gt>>,
+and C<EE<lt>057E<gt>>, all mean "/", whose Unicode number is 47.  If
+the name has no known value (as with a name of "qacute") or is
+syntactically invalid (as with a name of "1/4"), this returns undef.
+
+=item $Name2character{I<name>}
+
+Maps from names (as in C<EE<lt>I<name>E<gt>>) like "eacute" or "sol"
+to the string that each stands for.  Note that this does not
+include numerics (like "64" or "x981c").  Under old Perl versions
+(before 5.7) you get a "?" in place of characters whose Unicode
+value is over 255.
+
+=item $Name2character_number{I<name>}
+
+Maps from names (as in C<EE<lt>I<name>E<gt>>) like "eacute" or "sol"
+to the Unicode value that each stands for.  For example,
+C<$Name2character_number{'eacute'}> is 201, and
+C<$Name2character_number{'eacute'}> is 8364.  You get the correct
+Unicode value, regardless of the version of Perl you're using --
+which differs from C<%Name2character>'s behavior under pre-5.7 Perls.
+
+Note that this hash does not
+include numerics (like "64" or "x981c").
+
+=item $Latin1Code_to_fallback{I<integer>}
+
+For numbers in the range 160 (0x00A0) to 255 (0x00FF), this maps
+from the character code for a Latin-1 character (like 233 for
+lowercase e-acute) to the US-ASCII character that best aproximates
+it (like "e").  You may find this useful if you are rendering
+POD in a format that you think deals well only with US-ASCII
+characters.
+
+=item $Latin1Char_to_fallback{I<character>}
+
+Just as above, but maps from characters (like "\xE9", 
+lowercase e-acute) to characters (like "e").
+
+=item $Code2USASCII{I<integer>}
+
+This maps from US-ASCII codes (like 32) to the corresponding
+character (like space, for 32).  Only characters 32 to 126 are
+defined.  This is meant for use by C<e2char($x)> when it senses
+that it's running on a non-ASCII platform (where chr(32) doesn't
+get you a space -- but $Code2USASCII{32} will).  It's
+documented here just in case you might find it useful.
+
+=back
+
+=head1 CAVEATS
+
+On Perl versions before 5.7, Unicode characters with a value
+over 255 (like lambda or emdash) can't be conveyed.  This
+module does work under such early Perl versions, but in the
+place of each such character, you get a "?".  Latin-1
+characters (characters 160-255) are unaffected.
+
+Under EBCDIC platforms, C<e2char($n)> may not always be the
+same as C<chr(e2charnum($n))>, and ditto for
+C<$Name2character{$name}> and
+C<chr($Name2character_number{$name})>.
+
+=head1 SEE ALSO
+
+L<Pod::Browser> - a pod web server based on L<Catalyst>.
+
+L<Pod::Checker> - check pod documents for syntax errors.
+
+L<Pod::Coverage> - check if the documentation for a module is comprehensive.
+
+L<perlpod> - description of pod format (for people documenting with pod).
+
+L<perlpodspec> - specification of pod format (for people processing it).
+
+L<Text::Unidecode> - ASCII transliteration of Unicode text.
+
+=head1 REPOSITORY
+
+L<https://github.com/neilbowers/Pod-Escapes>
+
+=head1 COPYRIGHT AND DISCLAIMERS
+
+Copyright (c) 2001-2004 Sean M. Burke.  All rights reserved.
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+This program is distributed in the hope that it will be useful, but
+without any warranty; without even the implied warranty of
+merchantability or fitness for a particular purpose.
+
+Portions of the data tables in this module are derived from the
+entity declarations in the W3C XHTML specification.
+
+Currently (October 2001), that's these three:
+
+ http://www.w3.org/TR/xhtml1/DTD/xhtml-lat1.ent
+ http://www.w3.org/TR/xhtml1/DTD/xhtml-special.ent
+ http://www.w3.org/TR/xhtml1/DTD/xhtml-symbol.ent
+
+=head1 AUTHOR
+
+Sean M. Burke C<sburke@cpan.org>
+
+Now being maintained by Neil Bowers E<lt>neilb@cpan.orgE<gt>
+
+=cut
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # What I used for reading the XHTML .ent files:

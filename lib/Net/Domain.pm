@@ -1,4 +1,3 @@
-#line 1 "Net/Domain.pm"
 # Net::Domain.pm
 #
 # Copyright (c) 1995-1998 Graham Barr <gbarr@pobox.com>. All rights reserved.
@@ -306,4 +305,50 @@ sub hostdomain {
 
 __END__
 
-#line 355
+=head1 NAME
+
+Net::Domain - Attempt to evaluate the current host's internet name and domain
+
+=head1 SYNOPSIS
+
+    use Net::Domain qw(hostname hostfqdn hostdomain domainname);
+
+=head1 DESCRIPTION
+
+Using various methods B<attempt> to find the Fully Qualified Domain Name (FQDN)
+of the current host. From this determine the host-name and the host-domain.
+
+Each of the functions will return I<undef> if the FQDN cannot be determined.
+
+=over 4
+
+=item hostfqdn ()
+
+Identify and return the FQDN of the current host.
+
+=item domainname ()
+
+An alias for hostfqdn ().
+
+=item hostname ()
+
+Returns the smallest part of the FQDN which can be used to identify the host.
+
+=item hostdomain ()
+
+Returns the remainder of the FQDN after the I<hostname> has been removed.
+
+=back
+
+=head1 AUTHOR
+
+Graham Barr <gbarr@pobox.com>.
+Adapted from Sys::Hostname by David Sundstrom <sunds@asictest.sc.ti.com>
+
+=head1 COPYRIGHT
+
+Copyright (c) 1995-1998 Graham Barr. All rights reserved.
+This program is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut

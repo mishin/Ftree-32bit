@@ -1,4 +1,3 @@
-#line 1 "Net/FTP/dataconn.pm"
 ##
 ## Generic data connection package
 ##

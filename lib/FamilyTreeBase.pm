@@ -24,7 +24,7 @@ package FamilyTreeBase;
 use strict;
 use warnings;
 
-use version; our $VERSION = qv('2.3.20');
+use version; our $VERSION = qv('2.3.21');
 
 use Params::Validate qw(:all);
 use CGI qw(:standard);
@@ -229,7 +229,7 @@ sub _password_check {
         && $self->{settings}{passwordReq} ne ""
         && $self->{settings}{password} ne $self->{password} )
     {
-        $self->toppage( $self->{textGenerator}->{Error} );
+        $self->_toppage( $self->{textGenerator}->{Error} );
         printf "<br>\n<br/>\n"
           . $self->{textGenerator}->{Sorry}
           . "!<br><br>\n";

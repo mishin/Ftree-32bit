@@ -1,4 +1,3 @@
-#line 1 "Net/FTP/A.pm"
 ## 
 ## Package to read/write on ASCII data connections
 ##

@@ -1,8 +1,31 @@
-#line 1 "Test/Builder/IO/Scalar.pm"
 package Test::Builder::IO::Scalar;
 
 
-#line 29
+=head1 NAME
+
+Test::Builder::IO::Scalar - A copy of IO::Scalar for Test::Builder
+
+=head1 DESCRIPTION
+
+This is a copy of IO::Scalar which ships with Test::Builder to
+support scalar references as filehandles on Perl 5.6.  Newer
+versions of Perl simply use C<<open()>>'s built in support.
+
+Test::Builder can not have dependencies on other modules without
+careful consideration, so its simply been copied into the distribution.
+
+=head1 COPYRIGHT and LICENSE
+
+This file came from the "IO-stringy" Perl5 toolkit.
+
+Copyright (c) 1996 by Eryq.  All rights reserved.
+Copyright (c) 1999,2001 by ZeeGee Software Inc.  All rights reserved.
+
+This program is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+
+=cut
 
 # This is copied code, I don't care.
 ##no critic
@@ -22,11 +45,21 @@ $VERSION = "2.110";
 
 #==============================
 
-#line 53
+=head2 Construction
+
+=over 4
+
+=cut
 
 #------------------------------
 
-#line 63
+=item new [ARGS...]
+
+I<Class method.>
+Return a new, unattached scalar handle.
+If any arguments are given, they're sent to open().
+
+=cut
 
 sub new {
     my $proto = shift;
@@ -42,7 +75,16 @@ sub DESTROY {
 
 #------------------------------
 
-#line 88
+=item open [SCALARREF]
+
+I<Instance method.>
+Open the scalar handle on a new scalar, pointed to by SCALARREF.
+If no SCALARREF is given, a "private" scalar is created to hold
+the file data.
+
+Returns the self object on success, undefined on error.
+
+=cut
 
 sub open {
     my ($self, $sref) = @_;
@@ -59,7 +101,12 @@ sub open {
 
 #------------------------------
 
-#line 110
+=item opened
+
+I<Instance method.>
+Is the scalar handle opened on something?
+
+=cut
 
 sub opened {
     *{shift()}->{SR};
@@ -67,7 +114,13 @@ sub opened {
 
 #------------------------------
 
-#line 124
+=item close
+
+I<Instance method.>
+Disassociate the scalar handle from its underlying scalar.
+Done automatically on destroy.
+
+=cut
 
 sub close {
     my $self = shift;
@@ -75,24 +128,40 @@ sub close {
     1;
 }
 
-#line 134
+=back
+
+=cut
 
 
 
 #==============================
 
-#line 144
+=head2 Input and output
+
+=over 4
+
+=cut
 
 
 #------------------------------
 
-#line 154
+=item flush
+
+I<Instance method.>
+No-op, provided for OO compatibility.
+
+=cut
 
 sub flush { "0 but true" }
 
 #------------------------------
 
-#line 165
+=item getc
+
+I<Instance method.>
+Return the next character, or undef if none remain.
+
+=cut
 
 sub getc {
     my $self = shift;
@@ -104,7 +173,14 @@ sub getc {
 
 #------------------------------
 
-#line 184
+=item getline
+
+I<Instance method.>
+Return the next line, or undef on end of string.
+Can safely be called in an array context.
+Currently, lines are delimited by "\n".
+
+=cut
 
 sub getline {
     my $self = shift;
@@ -188,7 +264,13 @@ sub getline {
 
 #------------------------------
 
-#line 274
+=item getlines
+
+I<Instance method.>
+Get all remaining lines.
+It will croak() if accidentally called in a scalar context.
+
+=cut
 
 sub getlines {
     my $self = shift;
@@ -200,7 +282,16 @@ sub getlines {
 
 #------------------------------
 
-#line 295
+=item print ARGS...
+
+I<Instance method.>
+Print ARGS to the underlying scalar.
+
+B<Warning:> this continues to always cause a seek to the end
+of the string, but if you perform seek()s and tell()s, it is
+still safer to explicitly seek-to-end before subsequent print()s.
+
+=cut
 
 sub print {
     my $self = shift;
@@ -224,7 +315,13 @@ sub _old_print {
 
 #------------------------------
 
-#line 325
+=item read BUF, NBYTES, [OFFSET]
+
+I<Instance method.>
+Read some bytes from the scalar.
+Returns the number of bytes actually read, 0 on end-of-file, undef on error.
+
+=cut
 
 sub read {
     my $self = $_[0];
@@ -240,7 +337,12 @@ sub read {
 
 #------------------------------
 
-#line 346
+=item write BUF, NBYTES, [OFFSET]
+
+I<Instance method.>
+Write some bytes to the scalar.
+
+=cut
 
 sub write {
     my $self = $_[0];
@@ -255,7 +357,13 @@ sub write {
 
 #------------------------------
 
-#line 367
+=item sysread BUF, LEN, [OFFSET]
+
+I<Instance method.>
+Read some bytes from the scalar.
+Returns the number of bytes actually read, 0 on end-of-file, undef on error.
+
+=cut
 
 sub sysread {
   my $self = shift;
@@ -264,42 +372,71 @@ sub sysread {
 
 #------------------------------
 
-#line 381
+=item syswrite BUF, NBYTES, [OFFSET]
+
+I<Instance method.>
+Write some bytes to the scalar.
+
+=cut
 
 sub syswrite {
   my $self = shift;
   $self->write(@_);
 }
 
-#line 390
+=back
+
+=cut
 
 
 #==============================
 
-#line 399
+=head2 Seeking/telling and other attributes
+
+=over 4
+
+=cut
 
 
 #------------------------------
 
-#line 409
+=item autoflush
+
+I<Instance method.>
+No-op, provided for OO compatibility.
+
+=cut
 
 sub autoflush {}
 
 #------------------------------
 
-#line 420
+=item binmode
+
+I<Instance method.>
+No-op, provided for OO compatibility.
+
+=cut
 
 sub binmode {}
 
 #------------------------------
 
-#line 430
+=item clearerr
+
+I<Instance method.>  Clear the error and EOF flags.  A no-op.
+
+=cut
 
 sub clearerr { 1 }
 
 #------------------------------
 
-#line 440
+=item eof
+
+I<Instance method.>  Are we at end of file?
+
+=cut
 
 sub eof {
     my $self = shift;
@@ -308,7 +445,11 @@ sub eof {
 
 #------------------------------
 
-#line 453
+=item seek OFFSET, WHENCE
+
+I<Instance method.>  Seek to a given position in the stream.
+
+=cut
 
 sub seek {
     my ($self, $pos, $whence) = @_;
@@ -328,7 +469,11 @@ sub seek {
 
 #------------------------------
 
-#line 477
+=item sysseek OFFSET, WHENCE
+
+I<Instance method.> Identical to C<seek OFFSET, WHENCE>, I<q.v.>
+
+=cut
 
 sub sysseek {
     my $self = shift;
@@ -337,13 +482,25 @@ sub sysseek {
 
 #------------------------------
 
-#line 491
+=item tell
+
+I<Instance method.>
+Return the current position in the stream, as a numeric offset.
+
+=cut
 
 sub tell { *{shift()}->{Pos} }
 
 #------------------------------
 
-#line 504
+=item  use_RS [YESNO]
+
+I<Instance method.>
+B<Deprecated and ignored.>
+Obey the current setting of $/, like IO::Handle does?
+Default is false in 1.x, but cold-welded true in 2.x and later.
+
+=cut
 
 sub use_RS {
     my ($self, $yesno) = @_;
@@ -352,20 +509,35 @@ sub use_RS {
 
 #------------------------------
 
-#line 518
+=item setpos POS
+
+I<Instance method.>
+Set the current position, using the opaque value returned by C<getpos()>.
+
+=cut
 
 sub setpos { shift->seek($_[0],0) }
 
 #------------------------------
 
-#line 529
+=item getpos
+
+I<Instance method.>
+Return the current position in the string, as an opaque object.
+
+=cut
 
 *getpos = \&tell;
 
 
 #------------------------------
 
-#line 541
+=item sref
+
+I<Instance method.>
+Return a reference to the underlying scalar.
+
+=cut
 
 sub sref { *{shift()}->{SR} }
 
@@ -399,8 +571,88 @@ __END__
 
 
 
-#line 577
+=back
+
+=cut
 
 
-#line 658
+=head1 WARNINGS
+
+Perl's TIEHANDLE spec was incomplete prior to 5.005_57;
+it was missing support for C<seek()>, C<tell()>, and C<eof()>.
+Attempting to use these functions with an IO::Scalar will not work
+prior to 5.005_57. IO::Scalar will not have the relevant methods
+invoked; and even worse, this kind of bug can lie dormant for a while.
+If you turn warnings on (via C<$^W> or C<perl -w>),
+and you see something like this...
+
+    attempt to seek on unopened filehandle
+
+...then you are probably trying to use one of these functions
+on an IO::Scalar with an old Perl.  The remedy is to simply
+use the OO version; e.g.:
+
+    $SH->seek(0,0);    ### GOOD: will work on any 5.005
+    seek($SH,0,0);     ### WARNING: will only work on 5.005_57 and beyond
+
+
+=head1 VERSION
+
+$Id: Scalar.pm,v 1.6 2005/02/10 21:21:53 dfs Exp $
+
+
+=head1 AUTHORS
+
+=head2 Primary Maintainer
+
+David F. Skoll (F<dfs@roaringpenguin.com>).
+
+=head2 Principal author
+
+Eryq (F<eryq@zeegee.com>).
+President, ZeeGee Software Inc (F<http://www.zeegee.com>).
+
+
+=head2 Other contributors
+
+The full set of contributors always includes the folks mentioned
+in L<IO::Stringy/"CHANGE LOG">.  But just the same, special
+thanks to the following individuals for their invaluable contributions
+(if I've forgotten or misspelled your name, please email me!):
+
+I<Andy Glew,>
+for contributing C<getc()>.
+
+I<Brandon Browning,>
+for suggesting C<opened()>.
+
+I<David Richter,>
+for finding and fixing the bug in C<PRINTF()>.
+
+I<Eric L. Brine,>
+for his offset-using read() and write() implementations.
+
+I<Richard Jones,>
+for his patches to massively improve the performance of C<getline()>
+and add C<sysread> and C<syswrite>.
+
+I<B. K. Oxley (binkley),>
+for stringification and inheritance improvements,
+and sundry good ideas.
+
+I<Doug Wilson,>
+for the IO::Handle inheritance and automatic tie-ing.
+
+
+=head1 SEE ALSO
+
+L<IO::String>, which is quite similar but which was designed
+more-recently and with an IO::Handle-like interface in mind,
+so you could mix OO- and native-filehandle usage without using tied().
+
+I<Note:> as of version 2.x, these classes all work like
+their IO::Handle counterparts, so we have comparable
+functionality to IO::String.
+
+=cut
 

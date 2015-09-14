@@ -1,4 +1,3 @@
-#line 1 "POSIX.pm"
 package POSIX;
 use strict;
 use warnings;

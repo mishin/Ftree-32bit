@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-#line 2 "Math/BigFloat/Trace.pm"
 
 package Math::BigFloat::Trace;
 

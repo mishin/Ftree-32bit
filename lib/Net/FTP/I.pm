@@ -1,4 +1,3 @@
-#line 1 "Net/FTP/I.pm"
 ## 
 ## Package to read/write on BINARY data connections
 ##

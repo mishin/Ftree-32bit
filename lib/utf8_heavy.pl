@@ -1,4 +1,3 @@
-#line 1 "utf8_heavy.pl"
 package utf8;
 use strict;
 use warnings;

@@ -1,4 +1,3 @@
-#line 1 "Opcode.pm"
 package Opcode;
 
 use 5.006_001;

@@ -1,4 +1,3 @@
-#line 1 "Log/Agent/Tag/Priority.pm"
 ###########################################################################
 #
 #   Priority.pm
@@ -103,5 +102,84 @@ sub make {
 1;			# for "require"
 __END__
 
-#line 185
+=head1 NAME
+
+Log::Agent::Tag::Priority - a log priority tag string
+
+=head1 SYNOPSIS
+
+ Not intended to be used directly
+ Inherits from Log::Agent::Tag.
+
+=head1 DESCRIPTION
+
+This class represents a log priority tag string.
+
+=head1 CREATION ROUTINE PARAMETERS
+
+The following parameters are defined, in alphabetical order:
+
+=over 4
+
+=item C<-display> => I<string>
+
+Specifies the priority/level string to display, with minimal variable
+substitution.  For instance:
+
+ -display => '[$priority/$level]'
+
+The defined variables are documented in the B<DISPLAY VARIABLES> section
+underneath.
+
+=item C<-level> => I<level>
+
+This parameter is internally added by C<Log::Agent> when computing the
+priority tag, since only it knows the level of the current messsage.
+
+=item C<-postfix> => I<flag>
+
+Whether tag should be placed after or before the log message.
+By default, it is prepended to the log message, i.e. this parameter is false.
+
+=item C<-priority> => I<prio>
+
+This parameter is internally added by C<Log::Agent> when computing the
+priority tag, since only it knows the priority of the current messsage.
+
+=item C<-separator> => I<string>
+
+The separation string between the tag and the log message.
+A single space by default.
+
+=back
+
+=head1 DISPLAY VARIABLES
+
+The C<-display> switch understands a few variables that can be substituted
+in the supplied string.  Both $var and C<${var}> forms are supported.
+Unknown variables are left untouched.
+
+=over 4
+
+=item C<$priority>
+
+The full priority name of the logged message, e.g. "warning" or "error".
+
+=item C<$level>
+
+The associated priority level of the logged message, a number.  For instance,
+the level associated to "warning" is C<4>.  See L<Log::Agent::Priorities>
+for the default name -> level mapping.
+
+=back
+
+=head1 AUTHOR
+
+Raphael Manfredi F<E<lt>Raphael_Manfredi@pobox.comE<gt>>
+
+=head1 SEE ALSO
+
+Log::Agent::Tag(3), Log::Agent::Message(3), Log::Agent::Priorities(3).
+
+=cut
 

@@ -1,4 +1,3 @@
-#line 1 "Log/Agent/Driver/Datum.pm"
 ###########################################################################
 #
 #   Datum.pm
@@ -153,5 +152,29 @@ sub logwrite {
 
 __END__
 
-#line 180
+=head1 NAME
+
+Log::Agent::Driver::Datum - interceptor driver to cooperate with Carp::Datum
+
+=head1 SYNOPSIS
+
+NONE
+
+=head1 DESCRIPTION
+
+The purpose of the interceptor is to cooperate with Carp::Datum by emitting
+traces to the debug channel via Carp::Datum's traces facilities.
+
+This driver is automatically installed by Log::Agent when Carp::Datum is
+in use and debug was activated through it.
+
+=head1 AUTHOR
+
+Raphael Manfredi F<E<lt>Raphael_Manfredi@pobox.comE<gt>>
+
+=head1 SEE ALSO
+
+Carp::Datum(3).
+
+=cut
 

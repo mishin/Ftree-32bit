@@ -1,4 +1,3 @@
-#line 1 "Encode/MIME/Name.pm"
 package Encode::MIME::Name;
 use strict;
 use warnings;
@@ -84,4 +83,12 @@ sub get_mime_name($) { $MIME_NAME_OF{$_[0]} };
 1;
 __END__
 
-#line 95
+=head1 NAME
+
+Encode::MIME::NAME -- internally used by Encode
+
+=head1 SEE ALSO
+
+L<I18N::Charset>
+
+=cut

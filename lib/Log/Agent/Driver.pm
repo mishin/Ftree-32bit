@@ -1,4 +1,3 @@
-#line 1 "Log/Agent/Driver.pm"
 ###########################################################################
 #
 #   Driver.pm
@@ -365,4 +364,250 @@ sub logwrite {
 1;    # for require
 __END__
 
-#line 614
+=head1 NAME
+
+Log::Agent::Driver - ancestor class for all Log::Agent drivers
+
+=head1 SYNOPSIS
+
+ @Log::Agent::Driver::XXX::ISA = qw(Log::Agent::Driver);
+
+=head1 DESCRIPTION
+
+The Log::Agent::Driver class is the root class from which all Log::Agent
+drivers inherit. It is a I<deferred> class, meaning that it cannot
+be instantiated directly. All the deferred routines need to be implemented
+by its heirs to form a valid driver.
+
+A I<deferred> routine is a routine whose signature and semantics (pre and
+post conditions, formally) are specified, but not implemented. It allows
+specification of high-level processings in terms of them, thereby factorizing
+common code in the ancestors without loosing specialization benefits.
+
+=head1 DRIVER LIST
+
+The following drivers are currently fully implemented:
+
+=over 4
+
+=item Log::Agent::Driver::Default
+
+This is the default driver which remaps to simple print(), warn() and die()
+Perl calls.
+
+=item Log::Agent::Driver::File
+
+This driver redirects logs to files. Each logging channel may go to a dedicated
+file.
+
+=item Log::Agent::Driver::Silent
+
+Silence all the logxxx() routines.
+
+=item Log::Agent::Driver::Syslog
+
+This driver redirects logs to the syslogd(8) daemon, which will then handle
+the dispatching to various logfiles, based on its own configuration.
+
+=back
+
+=head1 INTERFACE
+
+You need not read this section if you're only B<using> Log::Agent.  However,
+if you wish to B<implement> another driver, then you should probably read it
+a few times.
+
+The following routines are B<deferred> and therefore need to be defined
+by the heir:
+
+=over 4
+
+=item channel_eq($chan1, $chan2)
+
+Returns true when both channels $chan1 and $chan2 send their output to
+the same place.  The purpose is not to have a 100% accurate comparison,
+which is almost impossible for the Log::Agent::Driver::File driver,
+but to reasonably detect similarities to avoid duplicating messages to
+the same output when Carp::Datum is installed and activated.
+
+=item write($channel, $priority, $logstring)
+
+Emit the log entry held in $logstring, at priority $priority and through
+the specfied $channel name. A trailing "\n" is to be added if needed, but the
+$logstring should not already have one.
+
+The $channel name is just a string, and it is up to the driver to map that
+name to an output device using its own configuration information. The generic
+logxxx() routines use only C<error>, C<output> or C<debug> for channel names.
+
+The $priority entry is assumed to have passed through the map_pri() routine,
+which by default returns an empty string (only the Log::Agent::Driver::Syslog
+driver needs a priority, for now). Ignore if you don't need that, or redefine
+map_pri().
+
+The $logstring may not really be a plain string. It can actually be a
+Log::Agent::Message object with an overloaded stringification routine, so
+the illusion should be complete.
+
+=item make
+
+This is the creation routine. Its signature varies for each driver, naturally.
+
+=item prefix_msg($str)
+
+Prefix the log message string (a Log::Agent::Message object) with
+driver-specific information (like the configured prefix, the PID of the
+process, etc...).
+
+Must return the prefixed string, either as a Log::Agent::Message object
+or as a plain string. This means you may use normal string operations on the
+$str variable and let the overloaded stringification perform its magic. Or
+you may return the $str parameter without modification.
+
+There is no default implementation here because this is too driver-specific
+to choose one good default. And I like making things explicit sometimes.
+
+=back
+
+The following routines are implemented in terms of write(), map_pri()
+and prefix_msg(). The default implementation may need to be redefined for
+performance or tuning reasons, but simply defining the deferred routines
+above should bring a reasonable behaviour.
+
+As an example, here is the default logsay() implementation, which uses
+the emit() wrapper (see below):
+
+    sub logsay {
+        my $self = shift;
+        my ($str) = @_;
+        $self->emit('output', 'notice', $str);
+    }
+
+Yes, we do show the gory details in a manpage, but inheriting from a class
+is not for the faint of heart, and requires getting acquainted with the
+implementation, most of the time.
+
+The order is not alphabetical here but by increased level of severity
+(as expected, anyway):
+
+=over 4
+
+=item logwrite($channel, $priority, $level, $str)
+
+Log message to the given channel, at the specified priority/level,
+obtained through a call to map_pri().
+
+=item logsay($str)
+
+Log message to the C<output> channel, at the C<notice> priority.
+
+=item logwarn($str)
+
+Log warning to the C<error> channel at the C<warning> priority.
+
+=item logxcarp($offset, $str)
+
+Log warning to the C<error> channel at the C<warning> priority, from
+the perspective of the caller.  An additional $offset stack frames
+are skipped to find the caller (added to the hardwired fixed offset imposed
+by the overall Log::Agent architecture).
+
+=item logerr($str)
+
+Log error to the C<error> channel at the C<error> priority.
+
+=item logdie($str)
+
+Log fatal error to the C<error> channel at the C<critical> priority
+and then call die() with "$str\n" as argument.
+
+=item logxcroak($offset, $str)
+
+Log a fatal error, from the perspective of the caller. The error is logged
+to the C<error> channel at the C<critical> priority and then Carp::croak()
+is called with "$str\n" as argument.  An additional $offset stack frames
+are skipped to find the caller (added to the hardwired fixed offset imposed
+by the overall Log::Agent architecture).
+
+=item logconfess($str)
+
+Confess a fatal error. The error is logged to the C<error> channel at
+the C<critical> priority and then Carp::confess() is called with "$str\n"
+as argument.
+
+=back
+
+The following routines have a default implementation but may be redefined
+for specific drivers:
+
+=over 4
+
+=item emit($channel, $prio, $str)
+
+This is a convenient wrapper that calls:
+
+ write($channel, $self->priority($prio), $self->prefix_msg($str))
+
+using dynamic binding.
+
+=item map_pri($priority, $level)
+
+Converts a ("priority", level) tupple to a single priority token suitable
+for emit(). By default, returns an empty string, which is OK only when
+emit() does not care!
+
+=back
+
+The following routine is B<frozen>. There is no way in Perl to freeze a routine,
+i.e. to explicitely forbid any redefinition, so this is an informal
+notification:
+
+=over 4
+
+=item priority($priority)
+
+This routine returns the proper priority for emit() for each of the
+following strings: "critical", "error", "warning" and "notice", which are
+the hardwired priority strings, as documented above.
+
+It derives a logging level from the $priority given and then returns the
+result of:
+
+    map_pri($priority, $level);
+
+Therefore, only map_pri() should be redefined.
+
+=back
+
+Finally, the following initialization routine is provided: to record the
+
+=over 4
+
+=item _init($prefix, $penalty)
+
+Records the C<prefix> attribute, as well as the Carp C<penalty> (amount
+of extra stack frames to skip). Should be called in the constructor of
+all the drivers.
+
+=back
+
+=head1 AUTHORS
+
+Originally written by Raphael Manfredi E<lt>Raphael_Manfredi@pobox.comE<gt>,
+currently maintained by Mark Rogaski E<lt>mrogaski@cpan.orgE<gt>.
+
+=head1 LICENSE
+
+  Copyright (C) 1999 Raphael Manfredi.
+  Copyright (C) 2002 Mark Rogaski; all rights reserved.
+
+See L<Log::Agent(3)> or the README file included with the distribution for
+license information.
+
+=head1 SEE ALSO
+
+Log::Agent(3), Log::Agent::Driver::Default(3), Log::Agent::Driver::File(3),
+Log::Agent::Driver::Fork(3), Log::Agent::Driver::Silent(3),
+Log::Agent::Driver::Syslog(3), Carp::Datum(3).
+
+=cut

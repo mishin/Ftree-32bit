@@ -1,4 +1,3 @@
-#line 1 "Net/Netrc.pm"
 # Net::Netrc.pm
 #
 # Copyright (c) 1995-1998 Graham Barr <gbarr@pobox.com>. All rights reserved.
@@ -197,4 +196,138 @@ sub lpa {
 
 __END__
 
-#line 334
+=head1 NAME
+
+Net::Netrc - OO interface to users netrc file
+
+=head1 SYNOPSIS
+
+    use Net::Netrc;
+
+    $mach = Net::Netrc->lookup('some.machine');
+    $login = $mach->login;
+    ($login, $password, $account) = $mach->lpa;
+
+=head1 DESCRIPTION
+
+C<Net::Netrc> is a class implementing a simple interface to the .netrc file
+used as by the ftp program.
+
+C<Net::Netrc> also implements security checks just like the ftp program,
+these checks are, first that the .netrc file must be owned by the user and 
+second the ownership permissions should be such that only the owner has
+read and write access. If these conditions are not met then a warning is
+output and the .netrc file is not read.
+
+=head1 THE .netrc FILE
+
+The .netrc file contains login and initialization information used by the
+auto-login process.  It resides in the user's home directory.  The following
+tokens are recognized; they may be separated by spaces, tabs, or new-lines:
+
+=over 4
+
+=item machine name
+
+Identify a remote machine name. The auto-login process searches
+the .netrc file for a machine token that matches the remote machine
+specified.  Once a match is made, the subsequent .netrc tokens
+are processed, stopping when the end of file is reached or an-
+other machine or a default token is encountered.
+
+=item default
+
+This is the same as machine name except that default matches
+any name.  There can be only one default token, and it must be
+after all machine tokens.  This is normally used as:
+
+    default login anonymous password user@site
+
+thereby giving the user automatic anonymous login to machines
+not specified in .netrc.
+
+=item login name
+
+Identify a user on the remote machine.  If this token is present,
+the auto-login process will initiate a login using the
+specified name.
+
+=item password string
+
+Supply a password.  If this token is present, the auto-login
+process will supply the specified string if the remote server
+requires a password as part of the login process.
+
+=item account string
+
+Supply an additional account password.  If this token is present,
+the auto-login process will supply the specified string
+if the remote server requires an additional account password.
+
+=item macdef name
+
+Define a macro. C<Net::Netrc> only parses this field to be compatible
+with I<ftp>.
+
+=back
+
+=head1 CONSTRUCTOR
+
+The constructor for a C<Net::Netrc> object is not called new as it does not
+really create a new object. But instead is called C<lookup> as this is
+essentially what it does.
+
+=over 4
+
+=item lookup ( MACHINE [, LOGIN ])
+
+Lookup and return a reference to the entry for C<MACHINE>. If C<LOGIN> is given
+then the entry returned will have the given login. If C<LOGIN> is not given then
+the first entry in the .netrc file for C<MACHINE> will be returned.
+
+If a matching entry cannot be found, and a default entry exists, then a
+reference to the default entry is returned.
+
+If there is no matching entry found and there is no default defined, or
+no .netrc file is found, then C<undef> is returned.
+
+=back
+
+=head1 METHODS
+
+=over 4
+
+=item login ()
+
+Return the login id for the netrc entry
+
+=item password ()
+
+Return the password for the netrc entry
+
+=item account ()
+
+Return the account information for the netrc entry
+
+=item lpa ()
+
+Return a list of login, password and account information for the netrc entry
+
+=back
+
+=head1 AUTHOR
+
+Graham Barr <gbarr@pobox.com>
+
+=head1 SEE ALSO
+
+L<Net::Netrc>
+L<Net::Cmd>
+
+=head1 COPYRIGHT
+
+Copyright (c) 1995-1998 Graham Barr. All rights reserved.
+This program is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+=cut

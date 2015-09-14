@@ -1,4 +1,3 @@
-#line 1 "Log/Agent/Driver/Default.pm"
 ###########################################################################
 #
 #   Default.pm
@@ -146,4 +145,59 @@ sub logxcarp {
 1;	# for require
 __END__
 
-#line 204
+=head1 NAME
+
+Log::Agent::Driver::Default - default logging driver for Log::Agent
+
+=head1 SYNOPSIS
+
+ # Implicit use
+ use Log::Agent;
+ logconfig(-prefix => "prefix");   # optional
+
+ # Explicit use
+ use Log::Agent;
+ require Log::Agent::Driver::Default;
+
+ my $driver = Log::Agent::Driver::Default->make("prefix");
+ logconfig(-driver => $driver);
+
+=head1 DESCRIPTION
+
+The default logging driver remaps the logxxx() operations to their
+default Perl counterpart. For instance, logerr() will issue a warn()
+and logwarn() will call warn() with a clear "WARNING: " emphasis
+(to distinguish between the two calls).
+
+The only routine of interest here is the creation routine:
+
+=over 4
+
+=item make($prefix)
+
+Create a Log::Agent::Driver::Default driver whose prefix string will be
+$prefix. When no prefix is configured, the first letter of each logged
+string will be uppercased.
+
+=head1 CHANNELS
+
+The C<error>, C<output> and C<debug> channels all go to STDERR.
+
+=head1 BUGS
+
+If logdie() is used within an eval(), the string you will get in $@ will
+be prefixed. It's not really a bug, simply that wrapping a code into
+eval() and parsing $@ is poor's man exception handling which shows its
+limit here: since the programmer using logdie() cannot foresee which
+driver will be used, the returned string cannot be determined precisely.
+Morality: use die() if you mean it, and document the string as an exception.
+
+=head1 AUTHOR
+
+Raphael Manfredi F<E<lt>Raphael_Manfredi@pobox.comE<gt>>
+
+=head1 SEE ALSO
+
+Log::Agent::Driver(3), Log::Agent(3).
+
+=cut

@@ -1,4 +1,3 @@
-#line 1 "Tie/StdHandle.pm"
 package Tie::StdHandle; 
 
 use strict;
@@ -8,7 +7,33 @@ use vars qw(@ISA $VERSION);
 @ISA = 'Tie::Handle';
 $VERSION = '4.4';
 
-#line 37
+=head1 NAME
+
+Tie::StdHandle - base class definitions for tied handles
+
+=head1 SYNOPSIS
+
+    package NewHandle;
+    require Tie::Handle;
+
+    @ISA = qw(Tie::Handle);
+
+    sub READ { ... }		# Provide a needed method
+    sub TIEHANDLE { ... }	# Overrides inherited method
+
+
+    package main;
+
+    tie *FH, 'NewHandle';
+
+=head1 DESCRIPTION
+
+The B<Tie::StdHandle> package provide most methods for file handles described
+in L<perltie> (the exceptions are C<UNTIE> and C<DESTROY>).  It causes tied
+file handles to behave exactly like standard file handles and allow for
+selective overwriting of methods.
+
+=cut
 
 sub TIEHANDLE 
 {

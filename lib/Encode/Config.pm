@@ -1,4 +1,3 @@
-#line 1 "Encode/Config.pm"
 #
 # Demand-load module list
 #
@@ -164,4 +163,8 @@ while ( my ( $enc, $mod ) = each %ExtModule ) {
 1;
 __END__
 
-#line 171
+=head1 NAME
+
+Encode::Config -- internally used by Encode
+
+=cut

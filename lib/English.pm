@@ -1,4 +1,3 @@
-#line 1 "English.pm"
 package English;
 
 our $VERSION = '1.09';
@@ -6,7 +5,50 @@ our $VERSION = '1.09';
 require Exporter;
 @ISA = qw(Exporter);
 
-#line 52
+=head1 NAME
+
+English - use nice English (or awk) names for ugly punctuation variables
+
+=head1 SYNOPSIS
+
+    use English;
+    use English qw( -no_match_vars ) ;  # Avoids regex performance
+                                        # penalty in perl 5.16 and
+                                        # earlier
+    ...
+    if ($ERRNO =~ /denied/) { ... }
+
+=head1 DESCRIPTION
+
+This module provides aliases for the built-in variables whose
+names no one seems to like to read.  Variables with side-effects
+which get triggered just by accessing them (like $0) will still 
+be affected.
+
+For those variables that have an B<awk> version, both long
+and short English alternatives are provided.  For example, 
+the C<$/> variable can be referred to either $RS or 
+$INPUT_RECORD_SEPARATOR if you are using the English module.
+
+See L<perlvar> for a complete list of these.
+
+=head1 PERFORMANCE
+
+NOTE: This was fixed in perl 5.20.  Mentioning these three variables no
+longer makes a speed difference.  This section still applies if your code
+is to run on perl 5.18 or earlier.
+
+This module can provoke sizeable inefficiencies for regular expressions,
+due to unfortunate implementation details.  If performance matters in
+your application and you don't need $PREMATCH, $MATCH, or $POSTMATCH,
+try doing
+
+   use English qw( -no_match_vars ) ;
+
+.  B<It is especially important to do this in modules to avoid penalizing
+all applications which use them.>
+
+=cut
 
 no warnings;
 

@@ -1,4 +1,3 @@
-#line 1 "Exporter/Heavy.pm"
 package Exporter::Heavy;
 
 use strict;
@@ -7,7 +6,19 @@ no strict 'refs';
 # On one line so MakeMaker will see it.
 require Exporter;  our $VERSION = $Exporter::VERSION;
 
-#line 22
+=head1 NAME
+
+Exporter::Heavy - Exporter guts
+
+=head1 SYNOPSIS
+
+(internal use only)
+
+=head1 DESCRIPTION
+
+No user-serviceable parts inside.
+
+=cut
 
 #
 # We go to a lot of trouble not to 'require Carp' at file scope,

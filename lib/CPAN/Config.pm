@@ -1,4 +1,3 @@
-#line 1 "CPAN/Config.pm"
 
 # This is CPAN.pms systemwide configuration file. This file provides
 # defaults for users, and the values can be changed in a per-user

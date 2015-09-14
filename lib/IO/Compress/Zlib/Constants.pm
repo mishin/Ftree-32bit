@@ -1,4 +1,3 @@
-#line 1 "IO/Compress/Zlib/Constants.pm"
 
 package IO::Compress::Zlib::Constants ;
 

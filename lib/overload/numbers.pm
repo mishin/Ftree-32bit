@@ -1,4 +1,3 @@
-#line 1 "overload/numbers.pm"
 # -*- buffer-read-only: t -*-
 #
 #    lib/overload/numbers.pm

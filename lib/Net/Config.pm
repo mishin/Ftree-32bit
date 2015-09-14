@@ -1,4 +1,3 @@
-#line 1 "Net/Config.pm"
 # Net::Config.pm
 #
 # Copyright (c) 2000 Graham Barr <gbarr@pobox.com>. All rights reserved.
@@ -120,4 +119,194 @@ use vars qw(*is_external);
 
 __END__
 
-#line 313
+=head1 NAME
+
+Net::Config - Local configuration data for libnet
+
+=head1 SYNOPSYS
+
+    use Net::Config qw(%NetConfig);
+
+=head1 DESCRIPTION
+
+C<Net::Config> holds configuration data for the modules in the libnet
+distribution. During installation you will be asked for these values.
+
+The configuration data is held globally in a file in the perl installation
+tree, but a user may override any of these values by providing their own. This
+can be done by having a C<.libnetrc> file in their home directory. This file
+should return a reference to a HASH containing the keys described below.
+For example
+
+    # .libnetrc
+    {
+        nntp_hosts => [ "my_preferred_host" ],
+	ph_hosts   => [ "my_ph_server" ],
+    }
+    __END__
+
+=head1 METHODS
+
+C<Net::Config> defines the following methods. They are methods as they are
+invoked as class methods. This is because C<Net::Config> inherits from
+C<Net::LocalCfg> so you can override these methods if you want.
+
+=over 4
+
+=item requires_firewall HOST
+
+Attempts to determine if a given host is outside your firewall. Possible
+return values are.
+
+  -1  Cannot lookup hostname
+   0  Host is inside firewall (or there is no ftp_firewall entry)
+   1  Host is outside the firewall
+
+This is done by using hostname lookup and the C<local_netmask> entry in
+the configuration data.
+
+=back
+
+=head1 NetConfig VALUES
+
+=over 4
+
+=item nntp_hosts
+
+=item snpp_hosts
+
+=item pop3_hosts
+
+=item smtp_hosts
+
+=item ph_hosts
+
+=item daytime_hosts
+
+=item time_hosts
+
+Each is a reference to an array of hostnames (in order of preference),
+which should be used for the given protocol
+
+=item inet_domain
+
+Your internet domain name
+
+=item ftp_firewall
+
+If you have an FTP proxy firewall (B<NOT> an HTTP or SOCKS firewall)
+then this value should be set to the firewall hostname. If your firewall
+does not listen to port 21, then this value should be set to
+C<"hostname:port"> (eg C<"hostname:99">)
+
+=item ftp_firewall_type
+
+There are many different ftp firewall products available. But unfortunately
+there is no standard for how to traverse a firewall.  The list below shows the
+sequence of commands that Net::FTP will use
+
+  user        Username for remote host
+  pass        Password for remote host
+  fwuser      Username for firewall
+  fwpass      Password for firewall
+  remote.host The hostname of the remote ftp server
+
+=over 4
+
+=item 0Z<>
+
+There is no firewall
+
+=item 1Z<>
+
+     USER user@remote.host
+     PASS pass
+
+=item 2Z<>
+
+     USER fwuser
+     PASS fwpass
+     USER user@remote.host
+     PASS pass
+
+=item 3Z<>
+
+     USER fwuser
+     PASS fwpass
+     SITE remote.site
+     USER user
+     PASS pass
+
+=item 4Z<>
+
+     USER fwuser
+     PASS fwpass
+     OPEN remote.site
+     USER user
+     PASS pass
+
+=item 5Z<>
+
+     USER user@fwuser@remote.site
+     PASS pass@fwpass
+
+=item 6Z<>
+
+     USER fwuser@remote.site
+     PASS fwpass
+     USER user
+     PASS pass
+
+=item 7Z<>
+
+     USER user@remote.host
+     PASS pass
+     AUTH fwuser
+     RESP fwpass
+
+=back
+
+=item ftp_ext_passive
+
+=item ftp_int_passive
+
+FTP servers can work in passive or active mode. Active mode is when
+you want to transfer data you have to tell the server the address and
+port to connect to.  Passive mode is when the server provide the
+address and port and you establish the connection.
+
+With some firewalls active mode does not work as the server cannot
+connect to your machine (because you are behind a firewall) and the firewall
+does not re-write the command. In this case you should set C<ftp_ext_passive>
+to a I<true> value.
+
+Some servers are configured to only work in passive mode. If you have
+one of these you can force C<Net::FTP> to always transfer in passive
+mode; when not going via a firewall, by setting C<ftp_int_passive> to
+a I<true> value.
+
+=item local_netmask
+
+A reference to a list of netmask strings in the form C<"134.99.4.0/24">.
+These are used by the C<requires_firewall> function to determine if a given
+host is inside or outside your firewall.
+
+=back
+
+The following entries are used during installation & testing on the
+libnet package
+
+=over 4
+
+=item test_hosts
+
+If true then C<make test> may attempt to connect to hosts given in the
+configuration.
+
+=item test_exists
+
+If true then C<Configure> will check each hostname given that it exists
+
+=back
+
+=cut

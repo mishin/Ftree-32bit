@@ -1,4 +1,3 @@
-#line 1 "Log/Agent/Tag/Caller.pm"
 ###########################################################################
 #
 #   Caller.pm
@@ -199,5 +198,130 @@ sub string {
 1;            # for "require"
 __END__
 
-#line 327
+=head1 NAME
+
+Log::Agent::Tag::Caller - formats caller information
+
+=head1 SYNOPSIS
+
+ Not intended to be used directly
+ Inherits from Log::Agent::Tag.
+
+=head1 DESCRIPTION
+
+This class handles caller information for Log::Agent services and is not
+meant to be used directly.
+
+This manpage therefore only documents the creation routine parameters
+that can be specified at the Log::Agent level via the C<-caller> switch
+in the logconfig() routine.
+
+=head1 CALLER INFORMATION ENTITIES
+
+This class knows about four entities: I<package>, I<filename>, I<line>
+and I<subroutine>, which are to be understood within the context of the
+Log::Agent routine being called (e.g. a logwarn() routine), namely:
+
+=over 4
+
+=item package
+
+This is the package name where the call to the logwarn() routine was made.
+It can be specified as "pack" for short, or spelled out completely.
+
+=item filename
+
+This is the file where the call to the logwarn() routine was made.
+It can be specified as "file" for short, or spelled out completely.
+
+=item line
+
+This is the line number where the call to the logwarn() routine was made,
+in file I<filename>. The name is short enough to be spelled out completely.
+
+=item subroutine
+
+This is the subroutine where the call to the logwarn() routine was made.
+If the call is made outside a subroutine, this will be empty.
+The name is long enough to warrant the "sub" abbreviation if you don't wish
+to spell it out fully.
+
+=back
+
+=head1 CREATION ROUTINE PARAMETERS
+
+The purpose of those parameters is to define how caller information entities
+(as defined by the previous section) will be formatted within the log message.
+
+=over 4
+
+=item C<-display> => I<string>
+
+Specifies a string with minimal variable substitution: only the caller
+information entities specified above, or their abbreviation, will be
+interpolated. For instance:
+
+    -display => '($package::$sub/$line)'
+
+Don't forget to use simple quotes to avoid having Perl interpolate those
+as variables, or escape their leading C<$> sign otherwise. Using this
+convention was deemed to more readable (and natural in Perl)
+than SGML entities such as "&pack;".
+
+Using this switch supersedes the C<-info> and C<-format> switches.
+
+=item C<-format> => I<printf format>
+
+Formatting instructions for the caller information entities
+listed by the C<-info> switch. For instance:
+
+    -format => "%s:%4d"
+
+if you have specified two entities in C<-info>.
+
+The special formatting macro C<%a> stands for all the entities specified
+by C<-info> and is rendered by a string where values are separated by ":".
+
+=item C<-info> => I<"space separated list of parameters">
+
+Specifies a list of caller information entities that are to be formated
+using the C<-format> specification. For instance:
+
+    -info => "pack sub line"
+
+would only report those three entites.
+
+=item C<-postfix> => I<flag>
+
+Whether the string resulting from the formatting of the caller information
+entities should be appended to the regular log message or not
+(i.e. prepended, which is the default).
+
+=item C<-separator> => I<string>
+
+The separation string between the tag and the log message.
+A single space by default.
+
+=back
+
+=head1 AUTHORS
+
+Raphael Manfredi E<lt>Raphael_Manfredi@pobox.comE<gt> created the module, it
+is currently maintained by Mark Rogaski E<lt>mrogaski@cpan.orgE<gt>.
+
+Thanks to Jeff Boes for uncovering wackiness in caller().
+
+=head1 LICENSE
+
+Copyright (C) 1999 Raphael Manfredi.
+Copyright (C) 2002 Mark Rogaski; all rights reserved.
+
+See L<Log::Agent(3)> or the README file included with the distribution for
+license information.
+
+=head1 SEE ALSO
+
+Log::Agent(3), Log::Agent::Message(3).
+
+=cut
 

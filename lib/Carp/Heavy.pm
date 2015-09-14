@@ -1,4 +1,3 @@
-#line 1 "Carp/Heavy.pm"
 package Carp::Heavy;
 
 use Carp ();

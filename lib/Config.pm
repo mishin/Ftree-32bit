@@ -1,4 +1,3 @@
-#line 1 "Config.pm"
 # This file was created by configpm when Perl was built. Any changes
 # made to this file will be lost the next time perl is built.
 

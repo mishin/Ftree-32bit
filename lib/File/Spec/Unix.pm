@@ -1,4 +1,3 @@
-#line 1 "File/Spec/Unix.pm"
 package File::Spec::Unix;
 
 use strict;
@@ -19,7 +18,39 @@ unless (defined &canonpath) {
   };
 }
 
-#line 54
+=head1 NAME
+
+File::Spec::Unix - File::Spec for Unix, base for other File::Spec modules
+
+=head1 SYNOPSIS
+
+ require File::Spec::Unix; # Done automatically by File::Spec
+
+=head1 DESCRIPTION
+
+Methods for manipulating file specifications.  Other File::Spec
+modules, such as File::Spec::Mac, inherit from File::Spec::Unix and
+override specific methods.
+
+=head1 METHODS
+
+=over 2
+
+=item canonpath()
+
+No physical check on the filesystem, but a logical cleanup of a
+path. On UNIX eliminates successive slashes and successive "/.".
+
+    $cpath = File::Spec->canonpath( $path ) ;
+
+Note that this does *not* collapse F<x/../y> sections into F<y>.  This
+is by design.  If F</foo> on your system is a symlink to F</bar/baz>,
+then F</foo/../quux> is actually F</bar/quux>, not F</quux> as a naive
+F<../>-removal would give you.  If you want to do this kind of
+processing, you probably want C<Cwd>'s C<realpath()> function to
+actually traverse the filesystem cleaning up paths like this.
+
+=cut
 
 sub _pp_canonpath {
     my ($self,$path) = @_;
@@ -52,7 +83,15 @@ sub _pp_canonpath {
 }
 *canonpath = \&_pp_canonpath unless defined &canonpath;
 
-#line 95
+=item catdir()
+
+Concatenate two or more directory names to form a complete path ending
+with a directory. But remove the trailing slash from the resulting
+string, because it doesn't look good, isn't necessary and confuses
+OS2. Of course, if this is the root directory, don't cut off the
+trailing slash :-)
+
+=cut
 
 sub _pp_catdir {
     my $self = shift;
@@ -61,7 +100,12 @@ sub _pp_catdir {
 }
 *catdir = \&_pp_catdir unless defined &catdir;
 
-#line 109
+=item catfile
+
+Concatenate one or more directory names and a filename to form a
+complete path ending with a filename
+
+=cut
 
 sub _pp_catfile {
     my $self = shift;
@@ -73,22 +117,46 @@ sub _pp_catfile {
 }
 *catfile = \&_pp_catfile unless defined &catfile;
 
-#line 125
+=item curdir
+
+Returns a string representation of the current directory.  "." on UNIX.
+
+=cut
 
 sub curdir { '.' }
 use constant _fn_curdir => ".";
 
-#line 134
+=item devnull
+
+Returns a string representation of the null device. "/dev/null" on UNIX.
+
+=cut
 
 sub devnull { '/dev/null' }
 use constant _fn_devnull => "/dev/null";
 
-#line 143
+=item rootdir
+
+Returns a string representation of the root directory.  "/" on UNIX.
+
+=cut
 
 sub rootdir { '/' }
 use constant _fn_rootdir => "/";
 
-#line 160
+=item tmpdir
+
+Returns a string representation of the first writable directory from
+the following list or the current directory if none from the list are
+writable:
+
+    $ENV{TMPDIR}
+    /tmp
+
+If running under taint mode, and if $ENV{TMPDIR}
+is tainted, it is not used.
+
+=cut
 
 my ($tmpdir, %tmpenv);
 # Cache and return the calculated tmpdir, recording which env vars
@@ -142,31 +210,57 @@ sub tmpdir {
     $_[0]->_cache_tmpdir($_[0]->_tmpdir( $ENV{TMPDIR}, "/tmp" ), 'TMPDIR');
 }
 
-#line 218
+=item updir
+
+Returns a string representation of the parent directory.  ".." on UNIX.
+
+=cut
 
 sub updir { '..' }
 use constant _fn_updir => "..";
 
-#line 228
+=item no_upwards
+
+Given a list of file names, strip out those that refer to a parent
+directory. (Does not strip symlinks, only '.', '..', and equivalents.)
+
+=cut
 
 sub no_upwards {
     my $self = shift;
     return grep(!/^\.{1,2}\z/s, @_);
 }
 
-#line 240
+=item case_tolerant
+
+Returns a true or false value indicating, respectively, that alphabetic
+is not or is significant when comparing file specifications.
+
+=cut
 
 sub case_tolerant { 0 }
 use constant _fn_case_tolerant => 0;
 
-#line 253
+=item file_name_is_absolute
+
+Takes as argument a path and returns true if it is an absolute path.
+
+This does not consult the local filesystem on Unix, Win32, OS/2 or Mac 
+OS (Classic).  It does consult the working environment for VMS (see
+L<File::Spec::VMS/file_name_is_absolute>).
+
+=cut
 
 sub file_name_is_absolute {
     my ($self,$file) = @_;
     return scalar($file =~ m:^/:s);
 }
 
-#line 264
+=item path
+
+Takes no argument, returns the environment variable PATH as an array.
+
+=cut
 
 sub path {
     return () unless exists $ENV{PATH};
@@ -175,14 +269,37 @@ sub path {
     return @path;
 }
 
-#line 277
+=item join
+
+join is the same as catfile.
+
+=cut
 
 sub join {
     my $self = shift;
     return $self->catfile(@_);
 }
 
-#line 303
+=item splitpath
+
+    ($volume,$directories,$file) = File::Spec->splitpath( $path );
+    ($volume,$directories,$file) = File::Spec->splitpath( $path,
+                                                          $no_file );
+
+Splits a path into volume, directory, and filename portions. On systems
+with no concept of volume, returns '' for volume. 
+
+For systems with no syntax differentiating filenames from directories, 
+assumes that the last file is a path unless $no_file is true or a 
+trailing separator or /. or /.. is present. On Unix this means that $no_file
+true makes this return ( '', $path, '' ).
+
+The directory portion may or may not be returned with a trailing '/'.
+
+The results can be passed to L</catpath()> to get back a path equivalent to
+(usually identical to) the original path.
+
+=cut
 
 sub splitpath {
     my ($self,$path, $nofile) = @_;
@@ -202,14 +319,43 @@ sub splitpath {
 }
 
 
-#line 345
+=item splitdir
+
+The opposite of L</catdir()>.
+
+    @dirs = File::Spec->splitdir( $directories );
+
+$directories must be only the directory portion of the path on systems 
+that have the concept of a volume or that have path syntax that differentiates
+files from directories.
+
+Unlike just splitting the directories on the separator, empty
+directory names (C<''>) can be returned, because these are significant
+on some OSs.
+
+On Unix,
+
+    File::Spec->splitdir( "/a/b//c/" );
+
+Yields:
+
+    ( '', 'a', 'b', '', 'c', '' )
+
+=cut
 
 sub splitdir {
     return split m|/|, $_[1], -1;  # Preserve trailing fields
 }
 
 
-#line 359
+=item catpath()
+
+Takes volume, directory and file portions and returns an entire path. Under
+Unix, $volume is ignored, and directory and file are concatenated.  A '/' is
+inserted if needed (though if the directory portion doesn't start with
+'/' it is not added).  On other OSs, $volume is significant.
+
+=cut
 
 sub catpath {
     my ($self,$volume,$directory,$file) = @_;
@@ -228,7 +374,35 @@ sub catpath {
     return $directory ;
 }
 
-#line 406
+=item abs2rel
+
+Takes a destination path and an optional base path returns a relative path
+from the base path to the destination path:
+
+    $rel_path = File::Spec->abs2rel( $path ) ;
+    $rel_path = File::Spec->abs2rel( $path, $base ) ;
+
+If $base is not present or '', then L<cwd()|Cwd> is used. If $base is
+relative, then it is converted to absolute form using
+L</rel2abs()>. This means that it is taken to be relative to
+L<cwd()|Cwd>.
+
+On systems that have a grammar that indicates filenames, this ignores the 
+$base filename. Otherwise all path components are assumed to be
+directories.
+
+If $path is relative, it is converted to absolute form using L</rel2abs()>.
+This means that it is taken to be relative to L<cwd()|Cwd>.
+
+No checks against the filesystem are made, so the result may not be correct if
+C<$base> contains symbolic links.  (Apply
+L<Cwd::abs_path()|Cwd/abs_path> beforehand if that
+is a concern.)  On VMS, there is interaction with the working environment, as
+logicals and macros are expanded.
+
+Based on code written by Shigio Yamaguchi.
+
+=cut
 
 sub abs2rel {
     my($self,$path,$base) = @_;
@@ -309,7 +483,31 @@ sub _same {
   $_[1] eq $_[2];
 }
 
-#line 511
+=item rel2abs()
+
+Converts a relative path to an absolute path. 
+
+    $abs_path = File::Spec->rel2abs( $path ) ;
+    $abs_path = File::Spec->rel2abs( $path, $base ) ;
+
+If $base is not present or '', then L<cwd()|Cwd> is used. If $base is
+relative, then it is converted to absolute form using
+L</rel2abs()>. This means that it is taken to be relative to
+L<cwd()|Cwd>.
+
+On systems that have a grammar that indicates filenames, this ignores
+the $base filename. Otherwise all path components are assumed to be
+directories.
+
+If $path is absolute, it is cleaned up and returned using L</canonpath()>.
+
+No checks against the filesystem are made.  On VMS, there is
+interaction with the working environment, as logicals and
+macros are expanded.
+
+Based on code written by Shigio Yamaguchi.
+
+=cut
 
 sub rel2abs {
     my ($self,$path,$base ) = @_;
@@ -334,7 +532,22 @@ sub rel2abs {
     return $self->canonpath( $path ) ;
 }
 
-#line 551
+=back
+
+=head1 COPYRIGHT
+
+Copyright (c) 2004 by the Perl 5 Porters.  All rights reserved.
+
+This program is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself.
+
+Please submit bug reports and patches to perlbug@perl.org.
+
+=head1 SEE ALSO
+
+L<File::Spec>
+
+=cut
 
 # Internal routine to File::Spec, no point in making this public since
 # it is the standard Cwd interface.  Most of the platform-specific

@@ -1,4 +1,3 @@
-#line 1 "locale.pm"
 package locale;
 
 our $VERSION = '1.03';
@@ -6,7 +5,35 @@ use Config;
 
 $Carp::Internal{ (__PACKAGE__) } = 1;
 
-#line 37
+=head1 NAME
+
+locale - Perl pragma to use or avoid POSIX locales for built-in operations
+
+=head1 SYNOPSIS
+
+    @x = sort @y;      # Native-platform/Unicode code point sort order
+    {
+        use locale;
+        @x = sort @y;  # Locale-defined sort order
+    }
+    @x = sort @y;      # Native-platform/Unicode code point sort order
+                       # again
+
+=head1 DESCRIPTION
+
+This pragma tells the compiler to enable (or disable) the use of POSIX
+locales for built-in operations (for example, LC_CTYPE for regular
+expressions, LC_COLLATE for string comparison, and LC_NUMERIC for number
+formatting).  Each "use locale" or "no locale"
+affects statements to the end of the enclosing BLOCK.
+
+See L<perllocale> for more detailed information on how Perl supports
+locales.
+
+On systems that don't have locales, this pragma will cause your operations
+to behave as if in the "C" locale; attempts to change the locale will fail.
+
+=cut
 
 # A separate bit is used for each of the two forms of the pragma, as they are
 # mostly independent, and interact with each other and the unicode_strings

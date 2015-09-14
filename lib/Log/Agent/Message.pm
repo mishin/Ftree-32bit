@@ -1,4 +1,3 @@
-#line 1 "Log/Agent/Message.pm"
 ###########################################################################
 #
 #   Message.pm
@@ -161,4 +160,87 @@ sub clone {
 1;	# for require
 __END__
 
-#line 247
+=head1 NAME
+
+Log::Agent::Message - a log message
+
+=head1 SYNOPSIS
+
+ require Log::Agent::Message;
+
+ my $msg = Log::Agent::Message->make("string");
+ $msg->prepend("string");
+ $msg->append("string");
+ my $copy = $msg->clone;
+
+ print "Message is $msg\n";     # overloaded stringification
+
+=head1 DESCRIPTION
+
+The Log::Agent::Message class represents an original log message
+(a string) to which one may prepend or append other strings, but with
+the special property that prepended strings aggregate themselves
+in FIFO order, whilst appended strings aggregate themselves in LIFO
+order, which is counter-intuitive at first sight.
+
+In plain words, this means that the last routine that prepends something
+to the message will get its prepended string right next to the original
+string, regardless of what could have been prepended already. The behaviour
+is symetric for appending.
+
+=head1 INTERFACE
+
+The following routines are available:
+
+=over 4
+
+=item append($str)
+
+Append suppled string $str to the original string (given at creation
+time), at the head of all existing appended strings.
+
+=item append_last($str)
+
+Append suppled string $str to the original string (given at creation
+time), at the tail of all existing appended strings.
+
+=item clone
+
+Clone the message. This is not a shallow clone, because the list of
+prepended and appended strings is recreated. However it is not a deep
+clone, because the items held in those lists are merely copied (this would
+matter only when other objects with overloaded stringification routines
+were supplied to prepend() and append(), which is not the case today in
+the basic Log::Agent framework).
+
+=item make($string)
+
+This is the creation routine.
+
+=item prepend($str)
+
+Prepend supplied string $str to the original string (given at creation
+time), at the tail of all existing prepended strings.
+
+=item prepend_first($str)
+
+Prepend supplied string $str to the original string (given at creation
+time), at the head of all existing prepended strings.
+
+=item stringify
+
+This is the overloaded "" operator, which returns the complete string
+composed of all the prepended strings, the original string, and all
+the appended strings.
+
+=back
+
+=head1 AUTHOR
+
+Raphael Manfredi F<E<lt>Raphael_Manfredi@pobox.comE<gt>>
+
+=head1 SEE ALSO
+
+Log::Agent(3).
+
+=cut

@@ -1,4 +1,3 @@
-#line 1 "IO/Uncompress/Adapter/Bunzip2.pm"
 package IO::Uncompress::Adapter::Bunzip2;
 
 use strict;

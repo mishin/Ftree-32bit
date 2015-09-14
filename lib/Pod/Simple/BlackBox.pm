@@ -1,4 +1,3 @@
-#line 1 "Pod/Simple/BlackBox.pm"
 
 package Pod::Simple::BlackBox;
 #

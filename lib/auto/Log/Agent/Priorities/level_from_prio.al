@@ -1,4 +1,3 @@
-#line 1 "auto/Log/Agent/Priorities/level_from_prio.al"
 # NOTE: Derived from blib\lib\Log\Agent\Priorities.pm.
 # Changes made here will be lost when autosplit is run again.
 # See AutoSplit.pm.

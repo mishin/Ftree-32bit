@@ -1,4 +1,3 @@
-#line 1 "IO/Compress/Adapter/Bzip2.pm"
 package IO::Compress::Adapter::Bzip2 ;
 
 use strict;

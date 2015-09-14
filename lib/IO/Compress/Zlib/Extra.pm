@@ -1,4 +1,3 @@
-#line 1 "IO/Compress/Zlib/Extra.pm"
 package IO::Compress::Zlib::Extra;
 
 require 5.006 ;

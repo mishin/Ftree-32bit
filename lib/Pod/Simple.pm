@@ -1,4 +1,3 @@
-#line 1 "Pod/Simple.pm"
 
 require 5;
 package Pod::Simple;

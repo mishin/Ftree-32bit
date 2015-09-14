@@ -1,4 +1,3 @@
-#line 1 "Log/Agent/Tag_List.pm"
 ###########################################################################
 #
 #   Tag_List.pm
@@ -84,5 +83,47 @@ sub prepend {
 1;	# for require
 __END__
 
-#line 129
+=head1 NAME
+
+Log::Agent::Tag_List - user-defined tags to add to every log
+
+=head1 SYNOPSIS
+
+ use Log::Agent qw(logtags);
+
+ my $taglist = logtags();
+ $taglist->append(@tags);        # adds @tags at the tail of list
+ $taglist->prepend(@tags);       # adds @tags at the head of list
+
+=head1 DESCRIPTION
+
+This class handles the list of user-defined tags, which are added to
+each log message.  The initial list is taken from the C<-tags> argument
+of the logconfig() routine. See Log::Agent(3).
+
+=head1 INTERFACE
+
+The following interface is available:
+
+=over 4
+
+=item append I<list>
+
+Append I<list> of C<Log::Agent::Tag> objects to the existing list.
+
+=item prepend I<list>
+
+Prepends I<list> of C<Log::Agent::Tag> objects to the existing list.
+
+=back
+
+=head1 AUTHOR
+
+Raphael Manfredi F<E<lt>Raphael_Manfredi@pobox.comE<gt>>
+
+=head1 SEE ALSO
+
+Log::Agent(3), Log::Agent::Tag(3).
+
+=cut
 

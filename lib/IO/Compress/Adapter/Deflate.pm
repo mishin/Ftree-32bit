@@ -1,4 +1,3 @@
-#line 1 "IO/Compress/Adapter/Deflate.pm"
 package IO::Compress::Adapter::Deflate ;
 
 use strict;

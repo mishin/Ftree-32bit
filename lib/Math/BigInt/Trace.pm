@@ -1,5 +1,4 @@
 #!/usr/bin/perl -w
-#line 2 "Math/BigInt/Trace.pm"
 
 package Math::BigInt::Trace;
 
